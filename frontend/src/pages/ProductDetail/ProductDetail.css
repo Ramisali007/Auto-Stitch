@@ -406,3 +406,94 @@
   background: #fff;
   transform: scale(1.2);
 }
+
+/* ===== PRODUCT DETAIL RESPONSIVE ===== */
+@media (max-width: 992px) {
+  .pd-editorial-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .pd-image-col {
+    position: static;
+  }
+
+  .pd-editorial-wrap {
+    padding: 40px 30px;
+  }
+}
+
+@media (max-width: 768px) {
+  .pd-editorial-wrap {
+    padding: 20px 16px;
+  }
+
+  .pd-product-name {
+    font-size: 1.4rem;
+  }
+
+  .pd-price-row {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .pd-action-bar {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .pd-add-cart,
+  .pd-wishlist-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .pd-curated-title {
+    font-size: 1.4rem;
+  }
+
+  .curated-card {
+    flex: 0 0 200px;
+  }
+
+  .pd-image-nav {
+    width: 32px;
+    height: 32px;
+  }
+
+  .pd-image-nav.left { left: 12px; }
+  .pd-image-nav.right { right: 12px; }
+}
+
+@media (max-width: 480px) {
+  .pd-editorial-wrap {
+    padding: 16px 12px;
+  }
+
+  .pd-product-name {
+    font-size: 1.2rem;
+  }
+
+  .pd-breadcrumb-editorial {
+    font-size: 0.7rem;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .pd-size-options {
+    gap: 8px;
+  }
+
+  .pd-size-btn {
+    min-width: 44px;
+    padding: 10px 14px;
+  }
+
+  .curated-card {
+    flex: 0 0 170px;
+  }
+
+  .pd-curated-section {
+    padding: 40px 12px;
+  }
+}

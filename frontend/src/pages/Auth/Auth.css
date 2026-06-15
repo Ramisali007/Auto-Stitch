@@ -485,3 +485,67 @@
 .auth-separator-v2:not(:empty)::after {
   margin-left: 15px;
 }
+
+/* ===== AUTH RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .login-page-v2 {
+    padding: 120px 20px 60px;
+  }
+
+  .auth-page {
+    padding: 100px var(--space-md) var(--space-xl);
+  }
+
+  .auth-title {
+    font-size: 1.4rem;
+  }
+
+  .auth-card {
+    padding: var(--space-xl);
+  }
+
+  .login-title-serif {
+    font-size: 1.4rem;
+  }
+
+  .create-account-section {
+    padding-top: 25px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-page-v2 {
+    padding: 100px 16px 40px;
+  }
+
+  .login-container-v2 {
+    max-width: 100%;
+  }
+
+  .auth-container {
+    max-width: 100%;
+  }
+
+  .login-submit-btn {
+    padding: 14px;
+    font-size: 0.8rem;
+  }
+
+  .social-btn-v2 {
+    padding: 10px;
+    font-size: 0.75rem;
+  }
+
+  .role-selector {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-submit {
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+
+  .consent-text {
+    font-size: 0.72rem;
+  }
+}

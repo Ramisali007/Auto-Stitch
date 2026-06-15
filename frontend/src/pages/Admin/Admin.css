@@ -36,4 +36,35 @@
   .admin-stats { grid-template-columns: repeat(2, 1fr); }
   .admin-grid { grid-template-columns: 1fr; }
   .quick-grid { grid-template-columns: 1fr; }
+  .admin-page { padding-top: 100px; }
+  .admin-header h1 { font-size: 1.6rem; }
+
+  .approval-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
+
+  .approval-actions {
+    width: 100%;
+  }
+
+  .activity-item {
+    gap: var(--space-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-page { padding-top: 85px; }
+  .admin-stats { grid-template-columns: 1fr; }
+  .stat-icon { width: 40px; height: 40px; }
+  .stat-value { font-size: 1.2rem; }
+
+  .quick-card {
+    padding: var(--space-md);
+  }
+
+  .quick-card:hover {
+    transform: none;
+  }
 }

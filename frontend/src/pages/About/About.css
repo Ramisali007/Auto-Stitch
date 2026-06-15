@@ -83,3 +83,27 @@
     line-height: 1.6;
   }
 }
+
+@media (max-width: 480px) {
+  .about-hero-v2 {
+    height: 45vh;
+  }
+
+  .about-content-v2 {
+    padding: 50px 16px 60px;
+  }
+
+  .about-title-serif {
+    font-size: 1.5rem;
+    margin-bottom: 30px;
+  }
+
+  .about-para {
+    font-size: 0.85rem;
+    max-width: 100%;
+  }
+
+  .about-text-block {
+    gap: 25px;
+  }
+}

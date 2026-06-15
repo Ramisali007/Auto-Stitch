@@ -91,4 +91,29 @@
   .careers-para {
     font-size: 0.7rem;
   }
+
+  .careers-title-serif {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .careers-header-section {
+    padding: 95px 16px 40px;
+  }
+
+  .careers-para {
+    font-size: 0.65rem;
+    line-height: 1.7;
+  }
+
+  .careers-text-block {
+    gap: 20px;
+    margin-bottom: 35px;
+  }
+
+  .careers-title-serif {
+    font-size: 0.95rem;
+    margin-bottom: 25px;
+  }
 }

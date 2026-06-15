@@ -119,3 +119,56 @@
 .faq-item.open .faq-answer {
   display: block;
 }
+
+/* FAQ Responsive */
+@media (max-width: 768px) {
+  .faq-page {
+    padding-top: 120px;
+    padding-bottom: 80px;
+  }
+
+  .faq-title {
+    font-size: 22px;
+    margin-bottom: 35px;
+  }
+
+  .faq-nav {
+    gap: 16px;
+    margin-bottom: 35px;
+  }
+}
+
+@media (max-width: 480px) {
+  .faq-page {
+    padding-top: 95px;
+    padding-bottom: 60px;
+  }
+
+  .faq-container {
+    padding: 0 16px;
+  }
+
+  .faq-title {
+    font-size: 18px;
+    margin-bottom: 25px;
+  }
+
+  .faq-nav {
+    gap: 12px;
+    margin-bottom: 25px;
+  }
+
+  .faq-nav-btn {
+    font-size: 10px;
+  }
+
+  .faq-question {
+    font-size: 12px;
+    padding: 14px 0;
+  }
+
+  .faq-answer {
+    font-size: 12px;
+    padding-right: 20px;
+  }
+}

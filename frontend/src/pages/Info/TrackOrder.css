@@ -124,3 +124,47 @@
 .track-return-link:hover {
   color: #000;
 }
+
+/* TrackOrder Responsive */
+@media (max-width: 768px) {
+  .track-page {
+    padding-top: 120px;
+    padding-bottom: 80px;
+  }
+
+  .track-title {
+    font-size: 22px;
+  }
+
+  .track-subtitle {
+    margin-bottom: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .track-page {
+    padding-top: 95px;
+    padding-bottom: 60px;
+  }
+
+  .track-container {
+    padding: 0 16px;
+  }
+
+  .track-title {
+    font-size: 18px;
+  }
+
+  .track-subtitle {
+    font-size: 12px;
+    margin-bottom: 30px;
+  }
+
+  .track-input {
+    padding: 12px 14px;
+  }
+
+  .track-button {
+    padding: 14px;
+  }
+}

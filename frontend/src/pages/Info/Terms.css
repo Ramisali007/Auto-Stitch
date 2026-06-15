@@ -87,3 +87,18 @@
     margin-bottom: 50px;
   }
 }
+
+@media (max-width: 480px) {
+  .terms-page {
+    padding: 85px 16px 40px;
+  }
+
+  .terms-title-serif {
+    font-size: 1rem;
+    margin-bottom: 35px;
+  }
+
+  .terms-section {
+    margin-bottom: 30px;
+  }
+}

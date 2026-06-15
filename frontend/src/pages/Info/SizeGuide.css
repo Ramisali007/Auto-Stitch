@@ -110,10 +110,40 @@
 /* Responsive Adjustments */
 @media (max-width: 768px) {
   .size-banner-container {
-    height: 50vh;
+    height: auto;
   }
+
   .size-table th, .size-table td {
     padding: 15px 10px;
     font-size: 0.75rem;
+  }
+
+  .size-content-wrap {
+    padding: 0 16px;
+  }
+
+  .size-table-title {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .size-banner-container {
+    margin-bottom: 30px;
+  }
+
+  .size-content-wrap {
+    padding: 0 12px;
+  }
+
+  .size-table th, .size-table td {
+    padding: 10px 6px;
+    font-size: 0.7rem;
+  }
+
+  .size-breadcrumbs {
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 25px;
   }
 }

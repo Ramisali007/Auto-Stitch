@@ -587,3 +587,92 @@
 @media (max-width: 600px) {
   .editorial-product-grid { grid-template-columns: 1fr; }
 }
+
+/* ===== BOUTIQUE DIRECTORY RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .directory-hero-v2 {
+    height: 60vh;
+    margin-top: -80px;
+  }
+
+  .directory-header-v2 {
+    margin-top: 40px;
+    margin-bottom: 30px;
+  }
+
+  .directory-controls-v2 {
+    max-width: 100%;
+    padding: 0 15px;
+  }
+
+  .alphabet-filter {
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding: var(--space-sm) 0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .letter-btn {
+    flex-shrink: 0;
+  }
+
+  .brands-nav {
+    padding: 0 15px;
+    gap: 10px;
+  }
+
+  .directory-footer-banner.full-bleed {
+    margin-top: 40px;
+  }
+
+  .multi-brands-section {
+    padding: 40px 0;
+  }
+
+  .dir-card-image {
+    height: 160px;
+  }
+
+  .title-with-lines .line {
+    max-width: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .directory-hero-v2 {
+    height: 45vh;
+    margin-top: -60px;
+  }
+
+  .directory-main-title {
+    font-size: 1rem;
+  }
+
+  .boutiques-grid {
+    gap: var(--space-md);
+  }
+
+  .dir-card-image {
+    height: 140px;
+  }
+
+  .editorial-product-grid {
+    gap: 15px;
+  }
+
+  .editorial-card-img-wrap {
+    aspect-ratio: 3/4;
+  }
+
+  .editorial-name {
+    font-size: 0.78rem;
+  }
+
+  .brands-nav {
+    gap: 8px;
+  }
+
+  .brand-nav-link {
+    font-size: 0.7rem;
+  }
+}

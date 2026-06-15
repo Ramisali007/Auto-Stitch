@@ -217,7 +217,61 @@
 }
 
 @media (max-width: 768px) {
+  .wishlist-page {
+    padding: 6rem 0;
+  }
+
+  .wishlist-container {
+    padding: 0 1rem;
+  }
+
+  .wishlist-header-v2 {
+    margin-bottom: 3rem;
+  }
+
   .wishlist-title-serif {
     font-size: 2.5rem;
+  }
+
+  .wishlist-grid-editorial {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 2rem;
+  }
+
+  .wl-content-v2 {
+    padding: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .wishlist-page {
+    padding: 5rem 0 2rem;
+  }
+
+  .wishlist-title-serif {
+    font-size: 2rem;
+  }
+
+  .wishlist-grid-editorial {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .wishlist-card-premium:hover {
+    transform: none;
+  }
+
+  .wl-item-name-v2 {
+    font-size: 1rem;
+  }
+
+  .wl-cart-btn-v2 {
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+  }
+
+  .wl-empty-editorial {
+    padding: 5rem 0;
   }
 }

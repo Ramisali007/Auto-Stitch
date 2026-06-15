@@ -227,3 +227,60 @@
     max-width: 320px;
   }
 }
+
+@media (max-width: 768px) {
+  .store-hero {
+    height: 70vh;
+  }
+
+  .hero-title {
+    font-size: 3rem;
+  }
+
+  .locator-selection-view {
+    padding: 60px 20px;
+  }
+
+  .locator-controls {
+    margin-bottom: 60px;
+  }
+
+  .store-detail-map {
+    height: 350px;
+  }
+
+  .info-city {
+    font-size: 1.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .store-hero {
+    height: 55vh;
+  }
+
+  .hero-title {
+    font-size: 2.2rem;
+  }
+
+  .locator-selection-view {
+    padding: 40px 16px;
+  }
+
+  .locator-controls {
+    margin-bottom: 40px;
+  }
+
+  .store-detail-map {
+    height: 280px;
+  }
+
+  .info-city {
+    font-size: 1.5rem;
+  }
+
+  .book-appointment-btn {
+    padding: 12px 24px;
+    font-size: 0.75rem;
+  }
+}

@@ -437,3 +437,195 @@
 .product-dot.active {
   background: #fff;
 }
+
+/* ===== BOUTIQUE PROFILE RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .editorial-boutique-page {
+    padding-top: 95px;
+    padding-bottom: 60px;
+  }
+
+  .brand-editorial-header {
+    padding: 15px 16px 12px;
+  }
+
+  .brand-header-top {
+    margin-bottom: 15px;
+  }
+
+  .brand-logo-serif {
+    font-size: 1.6rem;
+    letter-spacing: 0.12em;
+  }
+
+  .editorial-container {
+    padding: 15px 12px;
+  }
+
+  .editorial-grid-v4 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .brand-subheader {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .serif-subtitle {
+    font-size: 1.6rem;
+    margin-bottom: 0;
+  }
+
+  /* Fix product info text cutoff */
+  .ep-info-main {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .ep-name {
+    max-width: 100%;
+    font-size: 0.65rem;
+    line-height: 1.3;
+  }
+
+  .ep-price {
+    font-size: 0.65rem;
+  }
+
+  /* Fix action buttons overflow — stack vertically */
+  .ep-actions {
+    flex-direction: column !important;
+    gap: 6px !important;
+  }
+
+  .ep-actions .btn-black,
+  .ep-actions a {
+    font-size: 0.6rem !important;
+    padding: 6px 8px !important;
+    white-space: nowrap;
+  }
+
+  /* Studio section */
+  .studio-banner-section {
+    padding: 50px 0;
+  }
+
+  .studio-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .studio-title {
+    font-size: 2rem;
+  }
+
+  .studio-subtitle {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .editorial-boutique-page {
+    padding-top: 80px;
+  }
+
+  .brand-editorial-header {
+    padding: 12px 12px 10px;
+  }
+
+  .brand-header-top {
+    margin-bottom: 10px;
+  }
+
+  .brand-logo-serif {
+    font-size: 1.3rem;
+    letter-spacing: 0.08em;
+  }
+
+  .editorial-grid-v4 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .editorial-container {
+    padding: 12px 8px;
+  }
+
+  .brand-nav-right {
+    gap: 10px;
+  }
+
+  .serif-subtitle {
+    font-size: 1.3rem;
+  }
+
+  /* Product card refinements */
+  .ep-details {
+    gap: 6px;
+  }
+
+  .ep-name {
+    font-size: 0.6rem;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .ep-price {
+    font-size: 0.6rem;
+  }
+
+  .ep-badge {
+    top: 8px;
+    left: 8px;
+    font-size: 0.55rem;
+    padding: 3px 6px;
+  }
+
+  /* Action buttons tighter */
+  .ep-actions {
+    margin-top: 8px !important;
+  }
+
+  .ep-actions .btn-black,
+  .ep-actions a {
+    font-size: 0.55rem !important;
+    padding: 5px 6px !important;
+    gap: 4px !important;
+  }
+
+  /* Image nav dots */
+  .product-image-nav {
+    width: 22px;
+    height: 22px;
+    opacity: 0.7;
+  }
+
+  .product-dot {
+    width: 4px;
+    height: 4px;
+  }
+
+  /* Studio */
+  .studio-title {
+    font-size: 1.6rem;
+  }
+
+  .studio-tagline {
+    font-size: 0.7rem;
+  }
+
+  /* Floating actions */
+  .brand-floating-actions {
+    bottom: 15px;
+    right: 15px;
+  }
+
+  .chat-trigger {
+    width: 40px;
+    height: 40px;
+  }
+}

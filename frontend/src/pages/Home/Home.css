@@ -1434,4 +1434,232 @@
   .social-title {
     font-size: 1.8rem;
   }
+
+  .social-track-viewport {
+    margin: 0;
+    padding: 0 15px;
+  }
+
+  .social-card {
+    flex: 0 0 260px;
+  }
+
+  /* Hero image positioning fix - center on mobile to avoid cropping faces */
+  .hero-slide-bg {
+    background-position: center center;
+  }
+
+  .hero-slider-wrap {
+    height: 85vh;
+  }
+
+  .progress-pill {
+    width: 50px;
+  }
+
+  .slider-progress-wrap {
+    bottom: 30px;
+  }
+
+  .slider-arrow.prev { left: 20px; }
+  .slider-arrow.next { right: 20px; }
+
+  /* Trending tabs scroll on mobile */
+  .trending-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    padding-bottom: 6px;
+  }
+
+  .trending-tab {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .trending-header,
+  .trending-slider-container {
+    padding: 0 20px;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  /* Eid cards */
+  .eid-card-premium {
+    width: 280px;
+    height: 420px;
+  }
+
+  /* Occasion section */
+  .occasion-content {
+    flex-direction: column;
+    padding: 0 20px;
+    gap: 30px;
+  }
+
+  .occasion-left {
+    flex: unset;
+    width: 100%;
+    text-align: center;
+    align-items: center;
+  }
+
+  .occasion-heading {
+    font-size: 1.6rem;
+    white-space: normal;
+  }
+
+  .occasion-desc { max-width: 100%; }
 }
+
+/* ===== HOME PAGE COMPREHENSIVE MOBILE ===== */
+@media (max-width: 480px) {
+  /* Hero */
+  .hero-slider-wrap {
+    height: 75vh;
+  }
+
+  .hero-slide-bg {
+    background-position: center center;
+    background-size: cover;
+  }
+
+  .slider-arrow.prev { left: 10px; }
+  .slider-arrow.next { right: 10px; }
+  .slider-arrow { padding: 10px; }
+
+  .hero-dash-indicators {
+    bottom: 20px;
+    right: 15px;
+    left: 15px;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .dash-item { width: 25px; }
+
+  .hero-brand-name {
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+  }
+
+  .hero-tagline {
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+  }
+
+  .hero-collection-title {
+    font-size: clamp(2.5rem, 8vw, 4rem);
+  }
+
+  .slider-nav-btn { display: none; }
+
+  .slider-progress-wrap { bottom: 20px; }
+  .progress-pill { width: 30px; height: 3px; }
+
+  .hero-content-center-bottom {
+    bottom: 15%;
+    padding: 0 15px;
+  }
+
+  /* USP Bar */
+  .usp-bar { padding: 16px 0; }
+  .usp-inner {
+    flex-direction: column;
+    gap: var(--space-sm);
+    align-items: center;
+  }
+  .usp-item {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+  }
+
+  /* Designer Spotlight */
+  .designer-name-loop {
+    font-size: 1.4rem;
+    padding: 0 20px;
+  }
+
+  .section-header { margin-bottom: 24px; }
+
+  /* Eid Section */
+  .eid-header { padding: 0 15px; }
+  .eid-title { font-size: 1.4rem; }
+  .eid-tagline { font-size: 0.85rem; }
+  .eid-card-premium {
+    width: 220px;
+    height: 340px;
+  }
+  .eid-card-premium img {
+    object-fit: cover;
+    object-position: center top;
+  }
+  .eid-label-text { font-size: 0.8rem; }
+
+  /* Best Sellers */
+  .best-sellers-section { padding: 60px 0; }
+  .best-sellers-banner-wrap { height: 250px; }
+
+  /* Occasion Section */
+  .occasion-content {
+    padding: 0 12px;
+    gap: 25px;
+  }
+  .occasion-heading {
+    font-size: 1.3rem;
+  }
+  .occasion-indicators { margin-top: 20px; justify-content: center; }
+  .occasion-slider-viewport { aspect-ratio: 3/4; }
+  .occasion-img {
+    object-fit: cover;
+    object-position: center center;
+  }
+
+  /* Signature Banner */
+  .signature-banner { height: 250px; }
+
+  /* Trending */
+  .trending-section { padding: 50px 0; }
+  .trending-header,
+  .trending-slider-container,
+  .trending-progress-bar {
+    padding: 0 12px;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .trending-main-title { font-size: 1.3rem; }
+  .trending-nav-top { flex-direction: column; gap: 12px; align-items: flex-start; }
+  .trending-card {
+    flex: 0 0 200px;
+  }
+  .trending-card img {
+    object-fit: cover;
+  }
+  .trending-progress-bar { margin: 25px 12px 0; }
+
+  /* Social Section */
+  .social-section { padding: 50px 0; }
+  .social-header { margin-bottom: 30px; }
+  .social-title { font-size: 1.4rem; }
+  .social-card {
+    flex: 0 0 220px;
+  }
+  .social-card-img img {
+    object-fit: cover;
+  }
+  .social-arrow-btn { width: 32px; height: 32px; }
+
+  /* Featured Collections */
+  .featured-collections { padding: var(--space-2xl) 0; }
+  .occasion-grid .grid-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .occasion-side-grid { grid-template-rows: 200px 200px; }
+
+  /* Featured Grid */
+  .featured-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+}

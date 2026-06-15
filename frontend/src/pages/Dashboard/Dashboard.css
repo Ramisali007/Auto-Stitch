@@ -194,4 +194,30 @@
   }
 }
 
+@media (max-width: 480px) {
+  .dashboard-page {
+    padding-top: 85px;
+  }
+
+  .dashboard-container {
+    padding: 0 var(--space-sm);
+  }
+
+  .dashboard-welcome {
+    font-size: 1.4rem;
+  }
+
+  .dashboard-sidebar {
+    gap: var(--space-md);
+  }
+
+  .sidebar-nav-item {
+    font-size: 0.8rem;
+  }
+
+  .order-item-img {
+    width: 50px;
+    height: 65px;
+  }
+}
 

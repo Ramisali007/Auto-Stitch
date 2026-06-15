@@ -328,4 +328,50 @@
     flex-direction: column;
     gap: 4px;
   }
+
+  .cart-title {
+    font-size: 1.8rem;
+  }
+
+  .summary-card {
+    padding: var(--space-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .cart-page {
+    padding: calc(var(--navbar-height) + var(--space-lg)) 0 var(--space-xl);
+  }
+
+  .cart-item {
+    grid-template-columns: 80px 1fr;
+    gap: var(--space-md);
+    padding: var(--space-sm);
+  }
+
+  .cart-item-img {
+    width: 80px;
+    height: 105px;
+  }
+
+  .cart-title {
+    font-size: 1.5rem;
+  }
+
+  .quantity-control {
+    gap: 10px;
+    padding: 4px 8px;
+  }
+
+  .item-name {
+    font-size: 1rem;
+  }
+
+  .promo-box {
+    flex-direction: column;
+  }
+
+  .total-amount {
+    font-size: 1.2rem;
+  }
 }

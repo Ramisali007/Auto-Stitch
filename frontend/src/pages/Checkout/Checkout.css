@@ -294,4 +294,85 @@
   .checkout-grid-editorial {
     grid-template-columns: 1fr;
   }
+
+  .checkout-title-serif {
+    font-size: 2.2rem;
+  }
+
+  .checkout-header {
+    margin-bottom: 3rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .checkout-page {
+    padding: 6rem 0;
+  }
+
+  .checkout-container {
+    padding: 0 1rem;
+  }
+
+  .checkout-stepper-modern {
+    gap: 1rem;
+    margin-bottom: 3rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .ck-step-v2 {
+    font-size: 0.65rem;
+    gap: 8px;
+  }
+
+  .payment-grid-editorial {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .ck-row-2 {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .checkout-summary-glass {
+    padding: 1.5rem;
+    position: static;
+  }
+
+  .checkout-title-serif {
+    font-size: 1.8rem;
+  }
+
+  .ck-section-label {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .checkout-page {
+    padding: 5rem 0 3rem;
+  }
+
+  .checkout-title-serif {
+    font-size: 1.5rem;
+  }
+
+  .checkout-stepper-modern {
+    gap: 0.5rem;
+  }
+
+  .ck-step-v2 {
+    font-size: 0.55rem;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-checkout-premium {
+    padding: 1rem;
+    font-size: 0.75rem;
+  }
+
+  .summary-row-v2.total {
+    font-size: 1.1rem;
+  }
 }

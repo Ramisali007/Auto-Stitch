@@ -147,3 +147,43 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 768px) {
+  .contact-page {
+    padding: 100px 16px 60px;
+  }
+
+  .contact-title-serif {
+    margin-bottom: 50px;
+  }
+
+  .contact-info-grid {
+    margin-bottom: 50px;
+  }
+
+  .contact-form-wrapper {
+    margin-top: 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  .contact-page {
+    padding: 85px 12px 40px;
+  }
+
+  .contact-title-serif {
+    font-size: 1rem;
+    margin-bottom: 35px;
+  }
+
+  .minimal-contact-submit {
+    padding: 13px;
+    font-size: 0.7rem;
+  }
+
+  .minimal-group input,
+  .minimal-group select,
+  .minimal-group textarea {
+    padding: 10px 12px;
+  }
+}

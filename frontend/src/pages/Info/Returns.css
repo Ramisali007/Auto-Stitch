@@ -56,3 +56,44 @@
 .returns-link:hover {
   opacity: 0.6;
 }
+
+/* Returns Responsive */
+@media (max-width: 768px) {
+  .returns-page {
+    padding-top: 120px;
+    padding-bottom: 80px;
+  }
+
+  .returns-title {
+    font-size: 22px;
+    margin-bottom: 40px;
+  }
+
+  .returns-subheading {
+    margin-top: 35px;
+  }
+}
+
+@media (max-width: 480px) {
+  .returns-page {
+    padding-top: 95px;
+    padding-bottom: 60px;
+  }
+
+  .returns-container {
+    padding: 0 16px;
+  }
+
+  .returns-title {
+    font-size: 18px;
+    margin-bottom: 30px;
+  }
+
+  .returns-subheading {
+    margin-top: 25px;
+  }
+
+  .returns-content p {
+    margin-bottom: 20px;
+  }
+}

@@ -557,6 +557,12 @@ h6 {
 }
 
 /* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+  :root {
+    --navbar-height: 75px;
+  }
+}
+
 @media (max-width: 1024px) {
   .grid-4 {
     grid-template-columns: repeat(2, 1fr);
@@ -568,7 +574,22 @@ h6 {
 }
 
 @media (max-width: 768px) {
+  :root {
+    --navbar-height: 70px;
+    --space-xl: 24px;
+    --space-2xl: 32px;
+    --space-3xl: 48px;
+  }
+
+  html {
+    font-size: 15px;
+  }
+
   .container {
+    padding: 0 var(--space-md);
+  }
+
+  .container-sm {
     padding: 0 var(--space-md);
   }
 
@@ -581,12 +602,61 @@ h6 {
   .section {
     padding: var(--space-2xl) 0;
   }
+
+  h1 { font-size: 1.8rem; }
+  h2 { font-size: 1.4rem; }
+  h3 { font-size: 1.15rem; }
+
+  .btn {
+    padding: 10px 20px;
+    font-size: 0.85rem;
+  }
+
+  .btn-lg {
+    padding: 14px 28px;
+    font-size: 0.95rem;
+  }
+
+  .form-input,
+  .form-select {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+  }
 }
 
 @media (max-width: 480px) {
+  :root {
+    --space-lg: 16px;
+    --space-xl: 20px;
+    --space-2xl: 28px;
+    --space-3xl: 40px;
+  }
+
+  html {
+    font-size: 14px;
+  }
+
+  .container {
+    padding: 0 var(--space-sm);
+  }
+
   .btn-lg {
     padding: 14px 24px;
     font-size: 0.95rem;
+    width: 100%;
+  }
+
+  .btn-sm {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+
+  .glass-card {
+    border-radius: var(--radius-md);
+  }
+
+  .glass-card:hover {
+    transform: none;
   }
 }
 

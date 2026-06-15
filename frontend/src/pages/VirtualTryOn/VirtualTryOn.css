@@ -595,4 +595,63 @@
     width: 100%;
     max-width: 280px;
   }
+
+  .garment-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-sm);
+  }
+
+  .consent-card {
+    padding: var(--space-lg);
+  }
+
+  .tryon-content-v2 {
+    padding: 0 var(--space-md);
+  }
+
+  .tryon-header-minimal {
+    margin-bottom: var(--space-lg);
+  }
+}
+
+@media (max-width: 480px) {
+  .garment-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .upload-dropzone {
+    aspect-ratio: 4/5;
+  }
+
+  .consent-card {
+    padding: var(--space-md);
+  }
+
+  .consent-desc {
+    font-size: 0.85rem;
+  }
+
+  .result-img-card {
+    max-width: 240px;
+  }
+
+  .result-arrow {
+    transform: rotate(90deg);
+  }
+
+  .tryon-go-btn {
+    padding: 14px 32px;
+    font-size: 0.95rem;
+    width: 100%;
+  }
+
+  .btn-black {
+    padding: 14px 24px !important;
+    font-size: 0.9rem !important;
+  }
+
+  .processing-card {
+    padding: var(--space-lg);
+  }
 }

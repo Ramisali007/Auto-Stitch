@@ -306,4 +306,55 @@
   .drawer-inner { flex-direction: column; gap: 20px; }
   .drawer-search { width: 100%; }
   .drawer-open { height: auto; padding-bottom: 20px; }
+
+  .header-top {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .catalogue-editorial {
+    padding-top: 95px;
+  }
+}
+
+@media (max-width: 480px) {
+  .editorial-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+  }
+
+  .editorial-title {
+    font-size: 1.2rem;
+  }
+
+  .item-info {
+    padding: 12px;
+  }
+
+  .item-name {
+    font-size: 0.7rem;
+  }
+
+  .item-price {
+    font-size: 0.7rem;
+  }
+
+  .editorial-action-btn {
+    font-size: 0.75rem;
+  }
+
+  .editorial-pagination {
+    gap: 20px;
+    padding: 40px 0;
+  }
+
+  .catalogue-editorial {
+    padding-top: 85px;
+  }
 }

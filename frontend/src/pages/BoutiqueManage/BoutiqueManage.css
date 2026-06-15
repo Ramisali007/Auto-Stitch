@@ -492,3 +492,136 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* ===== BOUTIQUE MANAGE RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .manage-page {
+    padding-top: 100px;
+  }
+
+  .manage-title-serif {
+    font-size: 2.2rem;
+  }
+
+  .manage-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .manage-toolbar-modern {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .search-wrap-minimal {
+    max-width: 100%;
+  }
+
+  .manage-filter-group {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 5px;
+  }
+
+  .manage-filter-pill {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .product-card-premium {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .pc-stats-row {
+    width: 100%;
+    justify-content: flex-start;
+    margin-right: 0;
+    gap: 1.5rem;
+  }
+
+  .pc-stat-item {
+    text-align: left;
+  }
+
+  .pc-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  /* Modal */
+  .modal-content {
+    padding: 2rem;
+    max-width: 95vw;
+  }
+
+  .modal-form {
+    grid-template-columns: 1fr;
+  }
+
+  .form-full {
+    grid-column: span 1;
+  }
+
+  .modal-footer {
+    grid-column: span 1;
+    flex-direction: column;
+  }
+
+  .modal-title {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .manage-page {
+    padding-top: 85px;
+  }
+
+  .manage-container {
+    padding: 0 12px;
+  }
+
+  .manage-title-serif {
+    font-size: 1.6rem;
+  }
+
+  .manage-header-center {
+    margin-bottom: 2rem;
+  }
+
+  .product-card-premium {
+    padding: 1rem;
+  }
+
+  .pc-image-wrap {
+    width: 60px;
+    height: 75px;
+  }
+
+  .pc-name {
+    font-size: 0.95rem;
+  }
+
+  .btn-black-premium {
+    padding: 14px 24px;
+    font-size: 0.78rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .modal-content {
+    padding: 1.5rem;
+    margin: 10px;
+  }
+
+  .btn-premium-action,
+  .btn-premium-cancel {
+    padding: 12px 20px;
+    font-size: 0.75rem;
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+}
+

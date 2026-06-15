@@ -943,3 +943,214 @@
   flex-shrink: 0;
   margin-top: 6px;
 }
+
+/* ===== NAVBAR RESPONSIVE ===== */
+
+/* Base fix: announcement-slider needs styles (was missing entirely) */
+.announcement-slider {
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 10px;
+  font-size: 0.65rem;
+}
+
+@media (max-width: 1024px) {
+  .top-bar-inner {
+    padding: 0 20px;
+  }
+
+  .navbar-inner-v2 {
+    padding: 0 20px;
+  }
+
+  .nav-group-right-v2 {
+    gap: 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* ---- TOP BAR FIX ---- */
+  .top-bar-v2 {
+    height: 28px;
+    font-size: 0.6rem;
+  }
+
+  .top-bar-inner {
+    padding: 0 15px;
+    justify-content: center;
+  }
+
+  .top-bar-left,
+  .top-bar-right {
+    display: none !important;
+  }
+
+  .top-separator {
+    display: none;
+  }
+
+  .announcement-slider {
+    flex: unset;
+    width: 100%;
+    text-align: center;
+    font-size: 0.6rem;
+  }
+
+  /* ---- NAVBAR FIX ---- */
+  .navbar-v2 {
+    top: 28px;
+    min-height: 60px;
+  }
+
+  .navbar-inner-v2 {
+    padding: 0 15px;
+    height: 60px;
+    grid-template-columns: auto 1fr auto;
+    gap: 8px;
+  }
+
+  .navbar-logo-v2 {
+    font-size: 1.15rem;
+    letter-spacing: 0.12em;
+    white-space: nowrap;
+  }
+
+  .nav-group-right-v2 {
+    gap: 10px;
+  }
+
+  .nav-icon-btn-v2 {
+    padding: 4px;
+  }
+
+  /* Hide cart/wishlist/bell text but keep icons */
+  .btn-signin-nav {
+    padding: 8px 14px;
+    font-size: 0.65rem;
+  }
+
+  /* Search Panel */
+  .search-panel-inline {
+    top: 0;
+  }
+
+  .search-panel-inner {
+    padding: 15px;
+    gap: 12px;
+  }
+
+  .search-suggestions-dropdown {
+    left: 15px;
+    right: 15px;
+    max-height: 350px;
+  }
+
+  /* Notifications - bottom sheet on mobile */
+  .notif-dropdown {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 70vh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    z-index: 9999;
+  }
+
+  /* User Dropdown */
+  .user-dropdown-menu-v2 {
+    right: -10px;
+    min-width: 160px;
+  }
+
+  .user-dropdown-menu {
+    right: -10px;
+    width: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* ---- TOP BAR 480 ---- */
+  .top-bar-v2 {
+    height: 24px;
+    font-size: 0.55rem;
+  }
+
+  .announcement-slider {
+    font-size: 0.55rem;
+    letter-spacing: 0.02em;
+  }
+
+  /* ---- NAVBAR 480 ---- */
+  .navbar-v2 {
+    top: 24px;
+    min-height: 52px;
+  }
+
+  .navbar-inner-v2 {
+    height: 52px;
+    padding: 0 10px;
+    gap: 6px;
+  }
+
+  .navbar-logo-v2 {
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+  }
+
+  .nav-group-left-v2 {
+    gap: 0;
+  }
+
+  .nav-group-right-v2 {
+    gap: 6px;
+  }
+
+  .nav-icon-btn-v2 {
+    padding: 2px;
+  }
+
+  .nav-badge-v2 {
+    top: -4px;
+    right: -4px;
+    min-width: 14px;
+    height: 14px;
+    font-size: 8px;
+  }
+
+  /* Editorial Menu trigger */
+  .editorial-trigger-group {
+    gap: 6px;
+  }
+
+  .trigger-text {
+    font-size: 0.6rem;
+  }
+
+  .trigger-text.secondary {
+    display: none;
+  }
+
+  .search-form-minimal input {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .navbar-logo-v2 {
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+  }
+
+  .trigger-text {
+    display: none;
+  }
+
+  .nav-group-right-v2 {
+    gap: 4px;
+  }
+}

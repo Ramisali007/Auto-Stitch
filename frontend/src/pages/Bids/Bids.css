@@ -493,3 +493,93 @@
     top: 0;
   }
 }
+
+@media (max-width: 768px) {
+  .workspace-hero-premium {
+    grid-template-columns: 1fr;
+    padding: 1.5rem;
+    gap: 2rem;
+  }
+
+  .hero-title-serif {
+    font-size: 2rem;
+  }
+
+  .hero-meta-modern {
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .hero-description-card {
+    padding: 1.5rem;
+  }
+
+  .proposal-inner {
+    padding: 1.5rem;
+  }
+
+  .proposal-header-modern {
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .proposal-quote {
+    text-align: left;
+  }
+
+  .proposal-footer-modern {
+    flex-direction: column;
+  }
+
+  .btn-message-minimal,
+  .btn-accept-premium {
+    flex: unset;
+    width: 100%;
+  }
+
+  .section-title-serif {
+    font-size: 1.5rem;
+  }
+
+  .workspace-empty-modern {
+    padding: 3rem;
+  }
+
+  .registry-item-modern {
+    padding: 1rem 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .bids-immersive-grid {
+    gap: 1.5rem;
+  }
+
+  .hero-title-serif {
+    font-size: 1.6rem;
+  }
+
+  .workspace-hero-premium {
+    padding: 1rem;
+  }
+
+  .hero-desc-text {
+    font-size: 0.95rem;
+  }
+
+  .proposal-inner {
+    padding: 1rem;
+  }
+
+  .boutique-brand {
+    gap: 1rem;
+  }
+
+  .brand-initials {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+}

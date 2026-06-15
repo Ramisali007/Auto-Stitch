@@ -7,4 +7,14 @@
 .reco-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-lg); }
 
 @media (max-width: 1024px) { .reco-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 768px) { .reco-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 768px) {
+  .reco-grid { grid-template-columns: repeat(2, 1fr); }
+  .recommendations-page { padding-top: 100px; }
+  .reco-header h1 { font-size: 1.8rem; }
+}
+@media (max-width: 480px) {
+  .recommendations-page { padding-top: 85px; }
+  .reco-grid { grid-template-columns: 1fr 1fr; gap: var(--space-md); }
+  .reco-header h1 { font-size: 1.5rem; }
+  .reco-section-title { font-size: 1.1rem; }
+}

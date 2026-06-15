@@ -348,4 +348,64 @@
   .review-v2-grid {
     grid-template-columns: 1fr;
   }
+
+  .customize-stepper-v2 {
+    max-width: 100%;
+    padding: 0 15px;
+  }
+
+  .step-v2-label {
+    font-size: 0.6rem;
+  }
+
+  .regions-selection-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+  }
+
+  .region-pill {
+    padding: 14px;
+  }
+
+  .custom-form-group label {
+    font-size: 0.7rem;
+  }
+
+  .review-v2-header {
+    padding: 1.5rem;
+  }
+
+  .review-v2-grid {
+    padding: 1.5rem;
+    gap: 1.5rem;
+  }
 }
+
+@media (max-width: 480px) {
+  .customize-stepper-v2 {
+    margin-bottom: 2rem;
+  }
+
+  .step-v2-label {
+    font-size: 0.55rem;
+    letter-spacing: 0.05em;
+  }
+
+  .regions-selection-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .ref-previews {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .review-img {
+    width: 60px;
+    height: 80px;
+  }
+
+  .review-refs {
+    gap: 8px;
+  }
+}
+

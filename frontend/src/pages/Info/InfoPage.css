@@ -170,4 +170,48 @@
   .info-title {
     font-size: 2rem;
   }
+
+  .info-header {
+    margin-top: 40px;
+    padding: var(--space-2xl) 0 var(--space-lg);
+  }
+
+  .store-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .map-header h3 {
+    font-size: 1.4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .info-content-wrapper {
+    padding: var(--space-md);
+  }
+
+  .info-title {
+    font-size: 1.6rem;
+  }
+
+  .info-icon-wrapper {
+    width: 60px;
+    height: 60px;
+  }
+
+  .info-prose h3 {
+    font-size: 1.2rem;
+  }
+
+  .info-header {
+    margin-top: 30px;
+  }
+
+  .store-card {
+    padding: var(--space-md);
+  }
+
+  .live-map-section {
+    margin-top: 40px;
+  }
 }
