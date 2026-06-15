@@ -1,8 +1,7 @@
 const mongoose = require('mongoose');
 const dns = require('dns');
 
-// Force Cloudflare + Google DNS (fixes SRV lookup failures on some ISPs)
-dns.setServers(['1.1.1.1', '8.8.8.8']);
+// Removed custom DNS to prevent PaaS resolution errors
 
 const connectDB = async (retries = 5) => {
   for (let i = 1; i <= retries; i++) {

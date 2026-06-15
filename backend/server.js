@@ -89,7 +89,7 @@ const server = http.createServer(app);
 // Initialize Socket.io
 initSocket(server);
 
-server.listen(PORT, () => {
-  console.log(`🚀 Auto Stitch Server running on http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Auto Stitch Server running on http://0.0.0.0:${PORT}`);
   console.log(`🌐 Environment: ${process.env.NODE_ENV}`);
 });
