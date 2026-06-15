@@ -1,6 +1,6 @@
 # 🧵 Auto Stitch - Next-Gen Custom Tailoring E-Commerce
 
-![Auto Stitch Banner](https://via.placeholder.com/1200x400.png?text=Auto+Stitch+-+MERN+Marketplace+with+AI+Try-On)
+![Auto Stitch Banner](frontend/src/assets/hero.png)
 
 > A full-stack MERN marketplace revolutionizing custom tailoring. Auto Stitch empowers boutiques and customers to collaborate via a unique bidding system. Features include real-time Socket.io chat, Stripe payments, AI virtual try-ons, and dynamic animations for a premium shopping experience.
 
