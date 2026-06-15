@@ -1,0 +1,39 @@
+.admin-page { padding-top: 120px; min-height: 100vh; padding-bottom: var(--space-3xl); }
+.admin-header { margin-bottom: var(--space-xl); }
+.admin-header h1 { font-size: 2rem; }
+.admin-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-md); margin-bottom: var(--space-2xl); }
+.admin-stat-card { padding: var(--space-lg); display: flex; align-items: center; gap: var(--space-md); }
+.stat-icon { width: 48px; height: 48px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.stat-value { font-size: 1.5rem; font-weight: 700; }
+.stat-label { font-size: 0.8rem; color: var(--color-text-muted); }
+.stat-trend { font-size: 0.75rem; margin-top: 2px; }
+
+.admin-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: var(--space-xl); margin-bottom: var(--space-2xl); }
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); }
+.section-header h2 { font-size: 1.2rem; }
+
+.approval-list { padding: var(--space-md); }
+.approval-item { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-md); border-bottom: 1px solid var(--color-border-light); }
+.approval-item:last-child { border-bottom: none; }
+.approval-info { flex: 1; }
+.approval-actions { display: flex; gap: var(--space-sm); }
+
+.activity-list { padding: var(--space-md); }
+.activity-item { display: flex; align-items: flex-start; gap: var(--space-md); padding: var(--space-sm) 0; border-bottom: 1px solid var(--color-border-light); }
+.activity-item:last-child { border-bottom: none; }
+.activity-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-success); margin-top: 6px; flex-shrink: 0; }
+.activity-time { font-size: 0.75rem; white-space: nowrap; margin-left: auto; }
+
+.admin-quick-links h2 { font-size: 1.2rem; margin-bottom: var(--space-md); }
+.quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-md); }
+.quick-card { padding: var(--space-xl); display: flex; flex-direction: column; align-items: center; gap: var(--space-md); text-align: center; font-weight: 500; cursor: pointer; }
+.quick-card:hover { transform: translateY(-4px); }
+
+.fw-500 { font-weight: 500; }
+.text-xs { font-size: 0.78rem; }
+
+@media (max-width: 768px) {
+  .admin-stats { grid-template-columns: repeat(2, 1fr); }
+  .admin-grid { grid-template-columns: 1fr; }
+  .quick-grid { grid-template-columns: 1fr; }
+}

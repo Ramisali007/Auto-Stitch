@@ -1,0 +1,108 @@
+.minimal-auth-page {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  padding: 40px 20px;
+}
+
+.minimal-auth-container {
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.minimal-auth-title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.8rem;
+  font-weight: 500;
+  color: #000000;
+  margin-bottom: 8px;
+}
+
+.minimal-auth-subtitle {
+  font-size: 0.9rem;
+  color: #000000;
+  margin-bottom: 40px;
+  font-family: var(--font-body);
+}
+
+.minimal-auth-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.minimal-form-group {
+  text-align: left;
+  margin-bottom: 30px;
+}
+
+.minimal-form-group label {
+  display: block;
+  font-size: 0.75rem;
+  color: #999999;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.minimal-form-group input {
+  width: 100%;
+  padding: 10px 0;
+  border: none;
+  border-bottom: 1px solid #e0e0e0;
+  background: transparent;
+  font-size: 1rem;
+  color: #000000;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+
+.minimal-form-group input:focus {
+  border-bottom-color: #000000;
+}
+
+.minimal-submit-btn {
+  background: #dcdcdc;
+  /* Light grey like reference */
+  color: #ffffff;
+  border: none;
+  padding: 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  margin-bottom: 20px;
+  text-transform: capitalize;
+}
+
+.minimal-submit-btn:hover:not(:disabled) {
+  background: #c0c0c0;
+}
+
+.minimal-submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.minimal-auth-footer {
+  margin-top: 10px;
+}
+
+.minimal-cancel-link {
+  color: #000000;
+  text-decoration: underline;
+  font-size: 0.85rem;
+  transition: opacity 0.3s ease;
+}
+
+.minimal-cancel-link:hover {
+  opacity: 0.7;
+}
+
+.minimal-success-view {
+  font-size: 1rem;
+  line-height: 1.6;
+}

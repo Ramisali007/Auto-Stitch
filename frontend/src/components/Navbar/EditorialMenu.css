@@ -1,0 +1,177 @@
+.editorial-menu-wrapper {
+  position: relative;
+}
+
+/* Trigger Styling */
+.editorial-trigger-group {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.editorial-trigger-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  transition: opacity 0.3s ease;
+}
+
+.editorial-trigger-btn:hover {
+  opacity: 0.6;
+}
+
+.hamburger-icon {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 24px;
+}
+
+.hamburger-icon .line {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: currentColor;
+}
+
+.hamburger-icon .line.short {
+  width: 16px;
+}
+
+.trigger-text {
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.trigger-text.secondary {
+  color: #888;
+}
+
+/* Drawer Styling */
+.editorial-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 400px;
+  height: 100vh;
+  background: #ffffff;
+  z-index: 10000;
+  transform: translateX(-100%);
+  box-shadow: 20px 0 60px rgba(0, 0, 0, 0.05);
+  will-change: transform;
+  backface-visibility: hidden;
+  padding: 40px;
+}
+
+@media (max-width: 500px) {
+  .editorial-drawer {
+    width: 100%;
+  }
+}
+
+.drawer-inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.drawer-header {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  margin-bottom: 5%;
+}
+
+.drawer-header-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: #1a1a1a;
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+/* Nav List */
+.drawer-nav {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.drawer-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.drawer-link {
+  position: relative;
+  color: #1a1a1a;
+  text-decoration: none;
+  font-size: 1.05rem;
+  font-weight: 400;
+  transition: opacity 0.2s;
+  display: inline-block;
+}
+
+.drawer-link:hover {
+  opacity: 0.6;
+}
+
+.item-tag {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #0000ff;
+  /* Prada-style blue NEW tag */
+  text-transform: uppercase;
+  position: absolute;
+  top: 0;
+  right: -30px;
+}
+
+/* Footer */
+.drawer-footer {
+  margin-top: auto;
+  padding-top: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.footer-link {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: #1a1a1a;
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+/* Backdrop */
+.editorial-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+  cursor: pointer;
+}

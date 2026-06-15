@@ -1,0 +1,351 @@
+/* V2 STYLES FOR CUSTOMIZE PAGE */
+
+.customize-content-wrap {
+  margin-top: var(--space-xl);
+  animation: fadeIn 0.8s ease-out;
+}
+
+/* Stepper V2 */
+.customize-stepper-v2 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 4rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.step-v2 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+}
+
+.step-v2-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  z-index: 2;
+  transition: all 0.3s;
+}
+
+.step-v2-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.step-v2-line {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  right: -50%;
+  height: 1px;
+  background: var(--color-border);
+  z-index: 1;
+}
+
+.step-v2.active .step-v2-num {
+  background: #000;
+  border-color: #000;
+  color: #fff;
+  box-shadow: 0 0 20px rgba(0,0,0,0.1);
+}
+
+.step-v2.active .step-v2-label {
+  color: #000;
+  font-weight: 800;
+}
+
+.step-v2.done .step-v2-num {
+  background: #000;
+  border-color: #000;
+  color: #fff;
+}
+
+.step-v2.done .step-v2-line {
+  background: #000;
+}
+
+/* Regions Grid V2 */
+.regions-selection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+}
+
+.region-pill {
+  background: #fff;
+  border: 1px solid #eee;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  text-align: left;
+}
+
+.region-pill:hover {
+  border-color: #000;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+}
+
+.region-pill.active {
+  border-color: #000;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #000;
+}
+
+.region-pill-icon {
+  font-size: 1.2rem;
+}
+
+.region-pill-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #111;
+}
+
+.region-pill .check {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  color: #000;
+}
+
+/* Garment Overlay */
+.garment-overlay-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255,255,255,0.9);
+  backdrop-filter: blur(10px);
+  padding: 12px;
+  text-align: center;
+  border-top: 1px solid var(--color-border);
+}
+
+.garment-overlay-label span {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Details Layout */
+.details-layout {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 3rem;
+  text-align: left;
+}
+
+.custom-form-group {
+  margin-bottom: 2rem;
+}
+
+.custom-form-group label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+  color: #666;
+}
+
+.custom-textarea, .custom-input {
+  width: 100%;
+  border: 1px solid #eee;
+  padding: 18px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: all 0.3s;
+  background: #fff;
+  border-radius: 0; /* Sharp editorial look */
+}
+
+.custom-textarea:focus, .custom-input:focus {
+  border-color: #000;
+  background: #fff;
+  outline: none;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.02);
+}
+
+/* Ref Upload */
+.ref-upload-dropzone {
+  border: 1px dashed #eee;
+  aspect-ratio: 1/1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: #fafafa;
+  transition: all 0.3s;
+}
+
+.ref-upload-dropzone:hover {
+  border-color: #000;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+.ref-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: #999;
+  text-align: center;
+  padding: 2rem;
+}
+
+.ref-placeholder p {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.ref-previews {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 12px;
+  width: 100%;
+  height: 100%;
+}
+
+.ref-thumb {
+  position: relative;
+  aspect-ratio: 1/1;
+}
+
+.ref-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+}
+
+.ref-thumb button {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #000;
+  color: #fff;
+  border: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.ref-add-more {
+  aspect-ratio: 1/1;
+  border: 1px dashed var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ccc;
+}
+
+/* Review Card V2 */
+.review-v2-card {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.review-v2-header {
+  padding: 2rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.success-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.review-v2-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 2rem;
+  gap: 2rem;
+}
+
+.review-item label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #999;
+  margin-bottom: 8px;
+}
+
+.review-tag {
+  display: inline-block;
+  background: #f5f5f5;
+  padding: 4px 12px;
+  margin-right: 6px;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.review-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.review-desc {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.review-refs {
+  display: flex;
+  gap: 12px;
+}
+
+.review-img {
+  width: 80px;
+  height: 100px;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+}
+
+@media (max-width: 768px) {
+  .details-layout {
+    grid-template-columns: 1fr;
+  }
+  .review-v2-grid {
+    grid-template-columns: 1fr;
+  }
+}

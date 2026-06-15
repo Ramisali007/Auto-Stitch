@@ -1,0 +1,149 @@
+.contact-page {
+  background: #ffffff;
+  color: #000000;
+  padding: 120px 20px 80px;
+  min-height: 100vh;
+}
+
+.contact-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.contact-title-serif {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1.2rem;
+  font-weight: 500;
+  text-align: center;
+  margin-bottom: 80px;
+  letter-spacing: 0.02em;
+}
+
+.contact-info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 80px;
+}
+
+.contact-info-section {
+  text-align: left;
+}
+
+.contact-info-label {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 0.75rem;
+  margin-bottom: 4px;
+  text-transform: none;
+}
+
+.contact-info-value {
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 300;
+  color: #000;
+  line-height: 1.6;
+}
+
+.contact-info-value a {
+  color: #000;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.contact-form-wrapper {
+  margin-top: 100px;
+}
+
+.contact-form-intro {
+  font-size: 0.75rem;
+  font-weight: 300;
+  margin-bottom: 40px;
+  text-align: left;
+}
+
+.minimal-contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.contact-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.minimal-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.minimal-group label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #000;
+}
+
+.minimal-group input,
+.minimal-group select,
+.minimal-group textarea {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #000000;
+  background: transparent;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.7rem;
+  outline: none;
+  border-radius: 0;
+  transition: border-color 0.3s;
+}
+
+.minimal-group input::placeholder,
+.minimal-group textarea::placeholder {
+  color: #999;
+}
+
+.minimal-group input:focus,
+.minimal-group select:focus,
+.minimal-group textarea:focus {
+  border-color: #666;
+}
+
+.minimal-contact-submit {
+  background: #000000;
+  color: #ffffff;
+  border: none;
+  padding: 15px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: opacity 0.3s;
+}
+
+.minimal-contact-submit:hover {
+  opacity: 0.8;
+}
+
+/* Page Transition */
+.page-enter {
+  animation: fadeIn 0.8s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 600px) {
+  .contact-form-row {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,121 @@
+.faq-page {
+  padding-top: 160px; /* Breathing room below navbar */
+  padding-bottom: 120px;
+  background-color: var(--color-bg);
+  min-height: 100vh;
+}
+
+.faq-container {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.faq-title {
+  font-family: 'Playfair Display', 'Times New Roman', Times, serif;
+  font-style: italic;
+  font-size: 26px;
+  font-weight: 400;
+  text-align: center;
+  margin-bottom: 50px;
+  color: var(--color-text-primary);
+  letter-spacing: 0.5px;
+}
+
+/* Nav */
+.faq-nav {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 28px;
+  margin-bottom: 50px;
+}
+
+.faq-nav-btn {
+  background: none;
+  border: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  color: #7a7a7a;
+  cursor: pointer;
+  padding-bottom: 6px;
+  border-bottom: 1px solid transparent;
+  transition: all 0.2s ease;
+  letter-spacing: 0.2px;
+}
+
+.faq-nav-btn:hover {
+  color: var(--color-text-primary);
+}
+
+.faq-nav-btn.active {
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-text-primary);
+}
+
+/* Sections */
+.faq-section {
+  margin-bottom: 50px;
+}
+
+.faq-section-title {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+/* Accordion Item */
+.faq-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.faq-item {
+  border-bottom: 1px solid #eaeaea;
+}
+
+.faq-question {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.faq-icon {
+  font-size: 18px;
+  font-weight: 300;
+  color: var(--color-text-primary);
+  display: inline-block;
+  width: 20px;
+  text-align: center;
+}
+
+.faq-answer {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.8;
+  color: #4a4a4a;
+  padding-bottom: 18px;
+  padding-right: 40px; /* Don't overlap with icon area */
+  display: none;
+}
+
+.faq-answer p {
+  margin: 0;
+}
+
+.faq-item.open .faq-answer {
+  display: block;
+}

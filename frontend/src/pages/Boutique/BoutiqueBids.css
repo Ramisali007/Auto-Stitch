@@ -1,0 +1,182 @@
+.boutique-bids-page {
+  padding-top: 120px;
+  padding-bottom: 80px;
+  min-height: 100vh;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-2xl);
+}
+
+.dashboard-header h1 {
+  font-size: 2.5rem;
+  font-family: var(--font-display);
+}
+
+.stat-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  padding: var(--space-md) var(--space-xl);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-val { font-size: 1.5rem; font-weight: 800; color: var(--color-primary-light); }
+.stat-lab { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--color-text-muted); }
+
+.bids-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: var(--space-2xl);
+  align-items: flex-start;
+}
+
+/* Feed */
+.feed-toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: var(--space-lg);
+}
+
+.search-minimal {
+  flex: 1;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 10px;
+}
+
+.search-minimal input {
+  background: none;
+  border: none;
+  padding: 10px 0;
+  color: var(--color-text-primary);
+  font-size: 0.85rem;
+  width: 100%;
+  outline: none;
+}
+
+.feed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.feed-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-lg);
+  cursor: pointer;
+  transition: all var(--transition-md);
+}
+
+.feed-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--color-primary-light);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.feed-card.active {
+  border-color: var(--color-primary);
+  background: rgba(124, 58, 237, 0.03);
+}
+
+.feed-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-avatar-mini {
+  width: 24px;
+  height: 24px;
+  background: var(--color-border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.user-name { font-size: 0.85rem; font-weight: 600; }
+.time-ago { font-size: 0.7rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 4px; }
+
+.feed-card-body {
+  display: flex;
+  gap: 16px;
+}
+
+.feed-card-body img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: var(--radius-lg);
+}
+
+.req-preview h4 { font-size: 0.95rem; margin-bottom: 6px; }
+.req-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+.tag-mini { font-size: 0.6rem; font-weight: 700; background: var(--color-bg-surface); padding: 2px 6px; border-radius: 4px; color: var(--color-text-muted); border: 1px solid var(--color-border); }
+.budget-line { font-size: 0.85rem; }
+
+/* Workspace */
+.bid-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.workspace-header { padding: var(--space-xl); }
+.workspace-header h3 { font-size: 1.1rem; margin-bottom: var(--space-lg); color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+.req-full-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-row { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.req-desc { line-height: 1.6; color: var(--color-text-secondary); background: var(--color-bg-surface); padding: 16px; border-radius: var(--radius-lg); }
+
+.bid-form-wrap { padding: var(--space-xl); }
+.bid-form-wrap h3 { font-size: 1.5rem; margin-bottom: var(--space-xl); font-family: var(--font-display); }
+
+.bid-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.w-full { width: 100%; }
+
+.workspace-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3xl);
+  text-align: center;
+  height: 400px;
+}
+
+.workspace-placeholder svg { margin-bottom: var(--space-xl); color: var(--color-text-muted); opacity: 0.4; }
+
+@media (max-width: 1024px) {
+  .bids-grid { grid-template-columns: 1fr; }
+}

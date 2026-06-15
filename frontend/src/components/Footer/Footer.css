@@ -1,0 +1,305 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+.footer-v2 {
+  background: #ffffff;
+  padding-top: 60px;
+  padding-bottom: 30px;
+  border-top: 1px solid #eeeeee;
+  color: #1a1a1a;
+  font-family: 'Poppins', sans-serif;
+}
+
+.footer-v2 .container {
+  width: 94%;
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* Newsletter Section */
+.footer-newsletter-v2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 40px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 40px;
+}
+
+.newsletter-text h3 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+  color: #000000;
+}
+
+.newsletter-text p {
+  color: #888888;
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.newsletter-form-v2 {
+  display: flex;
+  gap: 15px;
+  min-width: 500px;
+}
+
+.newsletter-form-v2 input {
+  flex: 1;
+  padding: 14px 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.newsletter-form-v2 input::placeholder {
+  color: #99aab5;
+}
+
+.newsletter-form-v2 button {
+  background: #000000;
+  color: #ffffff;
+  padding: 12px 35px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  transition: opacity 0.2s ease;
+  font-family: 'Poppins', sans-serif;
+  text-transform: uppercase;
+}
+
+.newsletter-form-v2 button:hover {
+  opacity: 0.9;
+}
+
+/* Main Content */
+.footer-main-v2 {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 50px;
+  gap: 80px;
+}
+
+.footer-brand-v2 {
+  flex: 1;
+}
+
+.footer-logo-link {
+  text-decoration: none;
+  display: block;
+  width: fit-content;
+}
+
+.footer-logo-v2 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 2.8rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  margin-bottom: 30px;
+  color: #000000;
+  text-transform: uppercase;
+}
+
+.footer-contact-v2 {
+  color: #999999;
+  font-size: 0.8rem;
+  line-height: 1.8;
+  font-weight: 400;
+  max-width: 380px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.footer-contact-v2 p {
+  margin-bottom: 4px;
+}
+
+.footer-contact-v2 .contact-detail {
+  margin-top: 10px;
+}
+
+.footer-col-v2 {
+  min-width: 220px;
+}
+
+.footer-col-v2 h4 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 25px;
+  text-transform: none;
+  color: #111111;
+  letter-spacing: 0.01em;
+}
+
+.footer-col-v2 ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-col-v2 ul li {
+  margin-bottom: 14px;
+}
+
+.footer-col-v2 ul li a {
+  color: #999999;
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  font-weight: 400;
+  font-family: 'Poppins', sans-serif;
+}
+
+.footer-col-v2 ul li a:hover {
+  color: #000000;
+}
+
+.footer-payment-v2 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 30px 0;
+  border-top: 1px solid #f0f0f0;
+}
+
+.footer-payment-v2 p {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #1a1a1a;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.payment-icons-v2 {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.payment-badge {
+  background: #1a1a1a;
+  color: #ffffff;
+  height: 32px;
+  min-width: 45px;
+  padding: 0 10px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: transform 0.2s ease, background 0.2s ease;
+  user-select: none;
+}
+
+.payment-badge:hover {
+  transform: translateY(-2px);
+  background: #000000;
+}
+
+.payment-badge.jazzcash {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 800;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+}
+
+.payment-badge.jazzcash span {
+  color: #c5a059; /* Brand Gold */
+}
+
+.payment-badge.easypaisa {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 0.65rem;
+  letter-spacing: -0.03em;
+}
+
+.payment-badge.easypaisa span {
+  color: #10b981; /* Brand Green */
+}
+
+.payment-badge.cod {
+  font-size: 0.65rem;
+  font-weight: 700;
+  gap: 4px;
+  color: #999999;
+}
+
+.payment-badge svg {
+  height: 18px;
+  width: auto;
+}
+
+.payment-badge.visa svg,
+.payment-badge.mastercard svg {
+  height: 22px;
+}
+
+/* Bottom Bar */
+.footer-bottom-v2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 35px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.footer-copy-v2 {
+  color: #999999;
+  font-size: 0.8rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+.footer-social-v2 {
+  display: flex;
+  gap: 20px;
+}
+
+.footer-social-v2 a {
+  color: #666666;
+  font-size: 1.1rem;
+  transition: color 0.2s ease;
+}
+
+.footer-social-v2 a:hover {
+  color: #000000;
+}
+
+/* Responsive */
+@media (max-width: 991px) {
+  .footer-newsletter-v2 {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+  }
+
+  .newsletter-form-v2 {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .footer-main-v2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .footer-main-v2 {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-bottom-v2 {
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+  }
+}

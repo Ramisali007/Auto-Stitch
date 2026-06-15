@@ -1,0 +1,197 @@
+.dashboard-page {
+  padding-top: 120px;
+  padding-bottom: var(--space-3xl);
+  min-height: 100vh;
+  background-color: #fff;
+  color: #1a1a2e;
+}
+
+.dashboard-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-2xl);
+  display: flex;
+  gap: var(--space-3xl);
+}
+
+/* Sidebar Navigation */
+.dashboard-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.dashboard-nav-item {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  padding: 4px 0;
+  transition: color var(--transition-fast);
+  border-bottom: 2px solid transparent;
+  width: fit-content;
+}
+
+.dashboard-nav-item:hover {
+  color: var(--color-text-primary);
+}
+
+.dashboard-nav-item.active {
+  color: var(--color-text-primary);
+  border-bottom-color: var(--color-text-primary);
+}
+
+.dashboard-logout {
+  margin-top: var(--space-sm);
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.dashboard-logout:hover {
+  color: var(--color-error);
+}
+
+/* Main Content Area */
+.dashboard-main {
+  flex: 1;
+}
+
+.dashboard-welcome {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.2rem;
+  font-weight: 400;
+  margin-bottom: var(--space-3xl);
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.dashboard-content-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: var(--space-3xl);
+}
+
+.dashboard-section {
+  margin-bottom: var(--space-3xl);
+}
+
+.dashboard-section-title {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-xl);
+  color: var(--color-text-primary);
+}
+
+/* Account Info & Address Book */
+.info-block {
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: var(--color-text-primary);
+}
+
+.info-block p {
+  margin-bottom: 4px;
+}
+
+.info-link {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  margin-top: 12px;
+  transition: color var(--transition-fast);
+}
+
+.info-link:hover {
+  color: var(--color-text-primary);
+}
+
+/* Order History */
+.order-history-empty {
+  font-size: 0.95rem;
+  color: var(--color-text-primary);
+  margin-top: var(--space-md);
+}
+
+/* History & Bidding Views */
+.dashboard-history-view {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+}
+
+.history-item {
+  border-bottom: 1px solid var(--color-border-light);
+  padding-bottom: var(--space-xl);
+}
+
+.history-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-badge-minimal {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 4px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+}
+
+.status-badge-minimal.pending { color: var(--color-warning); border-color: var(--color-warning); }
+.status-badge-minimal.bidding { color: var(--color-info); border-color: var(--color-info); }
+.status-badge-minimal.bid_accepted { color: var(--color-success); border-color: var(--color-success); }
+.status-badge-minimal.done { color: var(--color-success); border-color: var(--color-success); }
+
+.bid-count-minimal {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text-accent);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .dashboard-container {
+    flex-direction: column;
+    gap: var(--space-xl);
+    padding: 0 var(--space-lg);
+  }
+  
+  .dashboard-sidebar {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--space-lg);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-md);
+  }
+  
+  .dashboard-content-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+  }
+
+  .dashboard-welcome {
+    font-size: 1.8rem;
+    margin-bottom: var(--space-xl);
+  }
+}
+
+

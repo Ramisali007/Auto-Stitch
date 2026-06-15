@@ -1,0 +1,253 @@
+.staggered-menu-wrapper {
+  position: relative;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.staggered-menu-wrapper.fixed-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 2000;
+}
+
+.sm-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #1a1a2e;
+  /* Force Indigo */
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  padding: 8px 16px;
+  border-radius: 40px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+  z-index: 10001 !important;
+  /* Higher than the panel (9999) */
+}
+
+.sm-toggle:hover {
+  background: rgba(26, 26, 46, 0.05);
+}
+
+.sm-toggle-textWrap {
+  position: relative;
+  display: inline-block;
+  height: 1em;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.sm-toggle-textInner {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.sm-toggle-line {
+  display: block;
+  height: 1em;
+  line-height: 1;
+}
+
+.sm-icon {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sm-icon-line {
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background: currentColor;
+  border-radius: 2px;
+}
+
+.sm-icon-line-v {
+  transform: rotate(90deg);
+}
+
+.staggered-menu-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 450px;
+  height: 100vh;
+  background-color: #ffffff !important;
+  /* Absolute Solid White */
+  opacity: 1 !important;
+  /* No Transparency */
+  display: flex;
+  flex-direction: column;
+  padding: 120px 40px 60px;
+  /* More space to clear the navbar */
+  z-index: 9999 !important;
+  /* Above everything including Navbar */
+  pointer-events: auto;
+  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.1);
+}
+
+.staggered-menu-wrapper[data-position="left"] .staggered-menu-panel {
+  right: auto;
+  left: 0;
+  box-shadow: 20px 0 60px rgba(0, 0, 0, 0.1);
+}
+
+.sm-prelayers {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 450px;
+  /* Match the panel width (450px) */
+  pointer-events: none;
+  z-index: 2040;
+}
+
+.staggered-menu-wrapper[data-position="left"] .sm-prelayers {
+  right: auto;
+  left: 0;
+}
+
+.sm-prelayer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.staggered-menu-wrapper[data-position="left"] .sm-prelayer {
+  right: auto;
+  left: 0;
+}
+
+.sm-panel-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.sm-panel-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sm-panel-item {
+  position: relative;
+  color: #1a1a2e;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.2rem, 3.5vw, 2.2rem);
+  /* Elite Petite Size */
+  text-decoration: none;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+.sm-panel-item:hover {
+  color: var(--sm-accent, #c5a059);
+  transform: translateX(10px);
+}
+
+.sm-panel-itemLabel {
+  display: inline-block;
+  will-change: transform;
+}
+
+.sm-panel-list[data-numbering] {
+  counter-reset: smItem;
+}
+
+.sm-panel-list[data-numbering] .sm-panel-item::before {
+  counter-increment: smItem;
+  content: counter(smItem, decimal-leading-zero);
+  position: absolute;
+  left: -40px;
+  top: 0.4em;
+  font-size: 0.65rem;
+  /* Petite numbering */
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: var(--sm-accent, #c5a059);
+  opacity: var(--sm-num-opacity, 0);
+  letter-spacing: 0.1em;
+}
+
+.sm-socials {
+  margin-top: auto;
+  border-top: 1px solid #eee;
+  padding-top: 2rem;
+}
+
+.sm-socials-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: #888;
+  margin-bottom: 1.5rem;
+}
+
+.sm-socials-list {
+  list-style: none;
+  display: flex;
+  gap: 1.5rem;
+}
+
+.sm-socials-link {
+  font-size: 1.2rem;
+  color: #1a1a2e;
+  text-decoration: none;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sm-socials-link:hover {
+  transform: translateY(-5px);
+}
+
+/* Colorful Instagram Branding */
+.sm-socials-link.ig-colorful:hover {
+  background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 4px 8px rgba(214, 36, 159, 0.3));
+}
+
+/* Official Facebook Blue */
+.sm-socials-link.fb-brand:hover {
+  color: #1877F2;
+}
+
+/* Official WhatsApp Green */
+.sm-socials-link.wa-brand:hover {
+  color: #25D366;
+}
+
+@media (max-width: 1024px) {
+
+  .staggered-menu-panel,
+  .sm-prelayers {
+    width: 100%;
+  }
+}

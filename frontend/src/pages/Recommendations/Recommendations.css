@@ -1,0 +1,10 @@
+.recommendations-page { padding-top: 120px; min-height: 100vh; padding-bottom: var(--space-3xl); }
+.reco-header { text-align: center; margin-bottom: var(--space-3xl); }
+.reco-header h1 { font-size: 2.5rem; margin: var(--space-md) 0; }
+.hero-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: var(--radius-full); background: var(--color-bg-surface); border: 1px solid var(--color-border); font-size: 0.8rem; color: var(--color-text-muted); }
+.reco-sections { display: flex; flex-direction: column; gap: var(--space-3xl); }
+.reco-section-title { font-size: 1.3rem; margin-bottom: var(--space-lg); }
+.reco-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-lg); }
+
+@media (max-width: 1024px) { .reco-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 768px) { .reco-grid { grid-template-columns: repeat(2, 1fr); } }

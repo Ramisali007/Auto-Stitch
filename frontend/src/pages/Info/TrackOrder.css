@@ -1,0 +1,126 @@
+.track-page {
+  padding-top: 160px;
+  padding-bottom: 120px;
+  background-color: var(--color-bg);
+  min-height: 100vh;
+}
+
+.track-container {
+  max-width: 650px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.track-title {
+  font-family: 'Playfair Display', 'Times New Roman', Times, serif;
+  font-style: italic;
+  font-size: 26px;
+  font-weight: 400;
+  text-align: center;
+  margin-bottom: 12px;
+  color: var(--color-text-primary);
+  letter-spacing: 0.5px;
+}
+
+.track-subtitle {
+  text-align: center;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  color: #7a7a7a;
+  margin-bottom: 60px;
+}
+
+.track-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.track-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.track-label {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #000;
+}
+
+.track-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #dcdcdc;
+  border-radius: 0; /* Sharp corners like the reference */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  color: #000;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.track-input::placeholder {
+  color: #a0a0a0;
+}
+
+.track-input:focus {
+  border-color: #000;
+}
+
+.track-note {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-style: italic;
+  color: #7a7a7a;
+  margin-top: -8px;
+}
+
+.track-button {
+  background-color: #000;
+  color: #fff;
+  border: none;
+  padding: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  margin-top: 16px;
+  width: 100%;
+}
+
+.track-button:hover {
+  opacity: 0.8;
+}
+
+.track-success-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  margin-top: 30px;
+}
+
+.track-return-link {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #7a7a7a;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  margin-top: 10px;
+  transition: color 0.2s ease;
+}
+
+.track-return-link:hover {
+  color: #000;
+}
