@@ -69,6 +69,16 @@ import { Toaster } from 'react-hot-toast';
 
 import { initSocket, disconnectSocket } from './utils/socket';
 
+// Global Axios Request Interceptor (Guarantees JWT token is sent across cross-domain Vercel/Render requests)
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  config.withCredentials = true;
+  return config;
+});
+
 export default function App() {
   const [user, setUser] = useState(() => {
     try {
@@ -89,6 +99,8 @@ export default function App() {
       await axios.post(`${API_URL}/api/auth/logout`, {}, { withCredentials: true });
     } catch (_) { }
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    delete axios.defaults.headers.common['Authorization'];
     disconnectSocket();
     setUser(null);
   };
@@ -98,11 +110,13 @@ export default function App() {
       initSocket(user._id);
     }
     
-    // Global Axios interceptor for 401s (Session Expiry)
+    // Global Axios interceptor for 401s (Session Expiry - only on critical authenticated endpoints)
     const interceptor = axios.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401) {
+        const url = error.config?.url || '';
+        const isAuthEndpoint = url.includes('/api/auth/login') || url.includes('/api/auth/register') || url.includes('/api/chatbot');
+        if (error.response?.status === 401 && !isAuthEndpoint && localStorage.getItem('token')) {
           handleLogout();
         }
         return Promise.reject(error);
