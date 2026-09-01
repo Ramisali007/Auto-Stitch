@@ -17,7 +17,7 @@ export default function Login({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [captchaToken, setCaptchaToken] = useState(null);
-  
+
   // 2FA Challenge State
   const [requires2FA, setRequires2FA] = useState(false);
   const [tempToken, setTempToken] = useState(null);
@@ -45,7 +45,7 @@ export default function Login({ onLogin }) {
     }
     setLoading(true);
     try {
-      const res = await axios.post(`${API_URL}/api/auth/login`, 
+      const res = await axios.post(`${API_URL}/api/auth/login`,
         { email: form.email, password: form.password, portal: 'customer', captchaToken: captchaToken || 'bypass-recaptcha' },
         { withCredentials: true }
       );
@@ -107,13 +107,13 @@ export default function Login({ onLogin }) {
     onSuccess: async (tokenResponse) => {
       setLoading(true);
       try {
-        const res = await axios.post(`${API_URL}/api/auth/google`, 
+        const res = await axios.post(`${API_URL}/api/auth/google`,
           { accessToken: tokenResponse.access_token },
           { withCredentials: true }
         );
         const data = res.data;
         if (!data.success) throw new Error(data.message);
-        
+
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('token', data.accessToken);
         onLogin && onLogin(data.user);
@@ -130,13 +130,13 @@ export default function Login({ onLogin }) {
   const handleFacebookLogin = async (fbAccessToken) => {
     setLoading(true);
     try {
-      const res = await axios.post(`${API_URL}/api/auth/facebook`, 
+      const res = await axios.post(`${API_URL}/api/auth/facebook`,
         { accessToken: fbAccessToken },
         { withCredentials: true }
       );
       const data = res.data;
       if (!data.success) throw new Error(data.message);
-      
+
       localStorage.setItem('user', JSON.stringify(data.user));
       localStorage.setItem('token', data.accessToken);
       onLogin && onLogin(data.user);
@@ -185,8 +185,8 @@ export default function Login({ onLogin }) {
                 {loading ? 'Verifying...' : 'Verify & Continue'}
               </button>
 
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => { setRequires2FA(false); setError(''); }}
                 style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', display: 'block', margin: '15px auto 0', fontSize: '0.85rem' }}
               >
@@ -245,16 +245,6 @@ export default function Login({ onLogin }) {
                   <Link to="/forgot-password" name="forgot" className="forgot-pass-link">Forgot Password?</Link>
                 </div>
 
-                {import.meta.env.VITE_RECAPTCHA_SITE_KEY && (
-                  <div className="form-group-v2" style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-                    <ReCAPTCHA
-                      sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-                      onChange={(token) => setCaptchaToken(token)}
-                      onExpired={() => setCaptchaToken(null)}
-                    />
-                  </div>
-                )}
-
                 <button type="submit" className="login-submit-btn" disabled={loading}>
                   {loading ? 'Processing...' : 'Submit'}
                 </button>
@@ -267,9 +257,9 @@ export default function Login({ onLogin }) {
                   <FaGoogle />
                   <span>Continue with Google</span>
                 </button>
-                <button 
-                  type="button" 
-                  className="social-btn-v2" 
+                <button
+                  type="button"
+                  className="social-btn-v2"
                   onClick={async () => {
                     try {
                       const token = await triggerFBLogin();
@@ -287,7 +277,7 @@ export default function Login({ onLogin }) {
               <div className="create-account-section">
                 <h3>CREATE AN ACCOUNT</h3>
                 <p>
-                  Create an account to access your orders and customer information. 
+                  Create an account to access your orders and customer information.
                   Enjoy access to special offers and first looks.
                 </p>
                 <Link to="/register" className="create-account-link">Create Account</Link>

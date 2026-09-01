@@ -30,16 +30,16 @@ export default function Register({ onLogin }) {
   const validate = () => {
     if (!form.name.trim()) return 'Full name is required';
     if (!form.email.trim()) return 'Email is required';
-    
+
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.(com|org|net|edu|gov|mil|co|info|io|pk|uk|us|ca|au)$/i;
     if (!emailRegex.test(form.email)) return 'Please enter a valid email domain (e.g., .com, .net)';
-    
+
     // Password Policy Check
     if (form.password.length < 8) return 'Password must be at least 8 characters';
     if (!/[A-Z]/.test(form.password)) return 'Password must contain at least one uppercase letter';
     if (!/[a-z]/.test(form.password)) return 'Password must contain at least one lowercase letter';
     if (!/[!@#$%^&*(),.?":{}|<>]/.test(form.password)) return 'Password must contain at least one special character';
-    
+
     if (form.password !== form.confirmPassword) return 'Passwords do not match';
     if (!consent) return 'Please accept the terms and privacy policy';
     return null;
@@ -51,7 +51,7 @@ export default function Register({ onLogin }) {
     if (err) { setError(err); return; }
     setLoading(true);
     try {
-      const res = await axios.post(`${API_URL}/api/auth/register`, 
+      const res = await axios.post(`${API_URL}/api/auth/register`,
         { name: form.name, email: form.email, password: form.password, role: form.role, captchaToken: captchaToken || 'bypass-recaptcha' },
         { withCredentials: true }
       );
@@ -85,7 +85,7 @@ export default function Register({ onLogin }) {
     onSuccess: async (tokenResponse) => {
       setLoading(true);
       try {
-        const res = await axios.post(`${API_URL}/api/auth/google`, 
+        const res = await axios.post(`${API_URL}/api/auth/google`,
           { accessToken: tokenResponse.access_token },
           { withCredentials: true }
         );
@@ -106,7 +106,7 @@ export default function Register({ onLogin }) {
   const handleFacebookLogin = async (fbAccessToken) => {
     setLoading(true);
     try {
-      const res = await axios.post(`${API_URL}/api/auth/facebook`, 
+      const res = await axios.post(`${API_URL}/api/auth/facebook`,
         { accessToken: fbAccessToken },
         { withCredentials: true }
       );
@@ -130,18 +130,18 @@ export default function Register({ onLogin }) {
 
           {/* Minimalist Role Selector */}
           <div className="minimal-role-selector">
-            <button 
-              type="button" 
-              className={form.role === 'customer' ? 'active' : ''} 
-              onClick={() => setForm({...form, role: 'customer'})}
+            <button
+              type="button"
+              className={form.role === 'customer' ? 'active' : ''}
+              onClick={() => setForm({ ...form, role: 'customer' })}
             >
               Customer
             </button>
             <span className="sep">|</span>
-            <button 
-              type="button" 
-              className={form.role === 'boutique_owner' ? 'active' : ''} 
-              onClick={() => setForm({...form, role: 'boutique_owner'})}
+            <button
+              type="button"
+              className={form.role === 'boutique_owner' ? 'active' : ''}
+              onClick={() => setForm({ ...form, role: 'boutique_owner' })}
             >
               Boutique Owner
             </button>
@@ -257,20 +257,10 @@ export default function Register({ onLogin }) {
               </label>
             </div>
 
-            {import.meta.env.VITE_RECAPTCHA_SITE_KEY && (
-              <div className="form-group-v2" style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-                <ReCAPTCHA
-                  sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-                  onChange={(token) => setCaptchaToken(token)}
-                  onExpired={() => setCaptchaToken(null)}
-                />
-              </div>
-            )}
-
             <button type="submit" className="login-submit-btn" disabled={loading}>
               {loading ? 'Creating...' : 'Create'}
             </button>
-            
+
             <Link to="/login" className="cancel-reg-link">Cancel</Link>
           </form>
 
@@ -281,8 +271,8 @@ export default function Register({ onLogin }) {
               <FaGoogle />
               <span>Sign up with Google</span>
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="social-btn-v2"
               onClick={async () => {
                 try {

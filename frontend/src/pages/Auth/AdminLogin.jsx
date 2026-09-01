@@ -114,16 +114,6 @@ export default function AdminLogin({ onLogin }) {
               </div>
             </div>
 
-            {import.meta.env.VITE_RECAPTCHA_SITE_KEY && (
-              <div className="form-group-v2" style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-                <ReCAPTCHA
-                  sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-                  onChange={(token) => setCaptchaToken(token)}
-                  onExpired={() => setCaptchaToken(null)}
-                />
-              </div>
-            )}
-
             <button type="submit" className="login-submit-btn" disabled={loading}>
               {loading ? 'Verifying...' : 'Access Portal'}
             </button>
