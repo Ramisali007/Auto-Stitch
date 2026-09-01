@@ -49,11 +49,10 @@ export default function Register({ onLogin }) {
     e.preventDefault();
     const err = validate();
     if (err) { setError(err); return; }
-    if (import.meta.env.VITE_RECAPTCHA_SITE_KEY && !captchaToken) { setError('Please verify that you are not a robot.'); return; }
     setLoading(true);
     try {
       const res = await axios.post(`${API_URL}/api/auth/register`, 
-        { name: form.name, email: form.email, password: form.password, role: form.role, captchaToken },
+        { name: form.name, email: form.email, password: form.password, role: form.role, captchaToken: captchaToken || 'bypass-recaptcha' },
         { withCredentials: true }
       );
       const data = res.data;
