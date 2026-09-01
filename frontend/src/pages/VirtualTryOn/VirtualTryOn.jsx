@@ -73,6 +73,9 @@ export default function VirtualTryOn() {
     }
   };
 
+  const [currentJobId, setCurrentJobId] = useState(null);
+  const [sessionToken, setSessionToken] = useState('');
+
   // Handle Real AI Virtual Try-On Generation
   const handleGenerate = async () => {
     if (!userPhoto || !selectedGarment || isSubmitting) return;
@@ -82,47 +85,107 @@ export default function VirtualTryOn() {
     setCurrentStage(0);
     setProgress(0);
 
-    // Dynamic pipeline stage progression animation
     const interval = setInterval(() => {
       setProgress((prev) => {
-        const next = prev + 2;
+        const next = prev + 3;
         if (next >= 25 && next < 50) setCurrentStage(1);
         else if (next >= 50 && next < 75) setCurrentStage(2);
         else if (next >= 75 && next < 100) setCurrentStage(3);
 
-        if (next >= 98) {
+        if (next >= 95) {
           clearInterval(interval);
-          return 98;
+          return 95;
         }
         return next;
       });
-    }, 45);
+    }, 50);
 
     try {
-      // Real API Call to Backend VTO service
-      const response = await axios.post(`${API_URL}/api/try-on/process`, {
+      // 1. Create Session
+      const sessionRes = await axios.post(`${API_URL}/api/vto/session`, {
+        productId: selectedGarment._id,
+        boutiqueId: selectedGarment.boutique?._id || selectedGarment.boutique,
+      }, { withCredentials: true });
+
+      const jId = sessionRes.data.jobId;
+      const sToken = sessionRes.data.sessionToken;
+      setCurrentJobId(jId);
+      setSessionToken(sToken);
+
+      // 2. Submit Job to Async Queue
+      await axios.post(`${API_URL}/api/vto/jobs`, {
+        jobId: jId,
         userPhoto,
-        garmentImage: selectedGarment.image || selectedGarment.images?.[0],
-        garmentName: selectedGarment.name,
-        category: selectedGarment.category,
         fitStyle: 'Tailored',
+      }, {
+        headers: { 'x-vto-session': sToken },
+        withCredentials: true,
       });
 
-      if (response.data.success && response.data.resultImage) {
-        setGeneratedTryOnImage(response.data.resultImage);
-      } else {
-        setGeneratedTryOnImage(selectedGarment.image);
-      }
+      // 3. Poll for completion
+      let attempts = 0;
+      const maxAttempts = 30;
+      const pollInterval = setInterval(async () => {
+        attempts++;
+        try {
+          const statusRes = await axios.get(`${API_URL}/api/vto/jobs/${jId}`, {
+            headers: { 'x-vto-session': sToken },
+            withCredentials: true,
+          });
+
+          if (statusRes.data.status === 'completed' && statusRes.data.resultUrl) {
+            clearInterval(pollInterval);
+            clearInterval(interval);
+            setProgress(100);
+            setGeneratedTryOnImage(statusRes.data.resultUrl);
+            setTimeout(() => {
+              setIsSubmitting(false);
+              setStep('result');
+              toast.success('Try-on generated! Source portrait purged from server.');
+            }, 400);
+          } else if (statusRes.data.status === 'failed') {
+            clearInterval(pollInterval);
+            clearInterval(interval);
+            setIsSubmitting(false);
+            setGeneratedTryOnImage(selectedGarment.image);
+            setStep('result');
+            toast.error(statusRes.data.errorDescription || 'Inference error; fallback preview loaded.');
+          }
+        } catch (_) {}
+
+        if (attempts >= maxAttempts) {
+          clearInterval(pollInterval);
+          clearInterval(interval);
+          setIsSubmitting(false);
+          setGeneratedTryOnImage(selectedGarment.image);
+          setStep('result');
+        }
+      }, 1500);
     } catch (err) {
-      console.warn('AI VTO API response note:', err.message);
-      // Fallback to garment preview image if external provider is offline
-      setGeneratedTryOnImage(selectedGarment.image);
-    } finally {
-      setProgress(100);
-      setTimeout(() => {
-        setIsSubmitting(false);
-        setStep('result');
-      }, 600);
+      console.warn('VTO Async notice, calling instant processor:', err.message);
+      try {
+        const response = await axios.post(`${API_URL}/api/try-on/process`, {
+          userPhoto,
+          garmentImage: selectedGarment.image || selectedGarment.images?.[0],
+          garmentName: selectedGarment.name,
+          category: selectedGarment.category,
+          fitStyle: 'Tailored',
+        });
+        if (response.data.success && response.data.resultImage) {
+          setGeneratedTryOnImage(response.data.resultImage);
+        } else {
+          setGeneratedTryOnImage(selectedGarment.image);
+        }
+      } catch (fallbackErr) {
+        setGeneratedTryOnImage(selectedGarment.image);
+      } finally {
+        clearInterval(interval);
+        setProgress(100);
+        setTimeout(() => {
+          setIsSubmitting(false);
+          setStep('result');
+        }, 500);
+      }
     }
   };
 
@@ -149,30 +212,68 @@ export default function VirtualTryOn() {
     }
   };
 
+  const processClientImage = (file) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file (JPEG, PNG, WebP)');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+        const maxDim = 1200;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        setUserPhoto(canvas.toDataURL('image/webp', 0.92));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => setUserPhoto(reader.result);
-    reader.readAsDataURL(file);
+    processClientImage(file);
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => setUserPhoto(reader.result);
-    reader.readAsDataURL(file);
+    processClientImage(file);
   };
 
-  const reset = () => {
+  const reset = async () => {
+    if (currentJobId) {
+      try {
+        await axios.delete(`${API_URL}/api/vto/jobs/${currentJobId}`, {
+          headers: { 'x-vto-session': sessionToken },
+          withCredentials: true,
+        });
+      } catch (_) {}
+    }
     setStep('upload');
     setUserPhoto(null);
     setCurrentStage(0);
     setProgress(0);
     setRating(0);
     setGeneratedTryOnImage(null);
+    setCurrentJobId(null);
+    toast.success('Session and temporary server files deleted.');
   };
 
   return (

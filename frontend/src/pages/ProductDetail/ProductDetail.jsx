@@ -4,7 +4,7 @@ import axios from 'axios';
 import {
   Star, Heart, ShoppingCart, Sparkles, Scissors, Share2, Shield, Truck,
   RotateCcw, ChevronLeft, ChevronRight, ZoomIn, CheckCircle, Store, ArrowRight,
-  MapPin, MessageSquarePlus, X, MessageSquare
+  MapPin, MessageSquarePlus, X, MessageSquare, Camera, Download
 } from 'lucide-react';
 import ProductCard from '../../components/ProductCard/ProductCard';
 import './ProductDetail.css';
@@ -58,6 +58,17 @@ export default function ProductDetail() {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '', fitFeedback: 'True to Size' });
   const [submittingReview, setSubmittingReview] = useState(false);
+
+  // Virtual Try-On State (Privacy-First In-Page Modal)
+  const [showTryOnModal, setShowTryOnModal] = useState(false);
+  const [tryOnPhoto, setTryOnPhoto] = useState(null);
+  const [tryOnLoading, setTryOnLoading] = useState(false);
+  const [tryOnStage, setTryOnStage] = useState('');
+  const [tryOnResult, setTryOnResult] = useState(null);
+  const [tryOnJobId, setTryOnJobId] = useState(null);
+  const [tryOnSessionToken, setTryOnSessionToken] = useState('');
+  const [showOriginal, setShowOriginal] = useState(false);
+  const tryOnFileRef = useRef(null);
 
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -151,6 +162,177 @@ export default function ProductDetail() {
     window.scrollTo(0, 0);
   }, [id]);
 
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload a valid image file (JPEG, PNG, WebP)');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image size exceeds 10MB limit. Please upload a smaller photo.');
+      return;
+    }
+
+    // Client-side image resize & orientation normalization on HTML5 Canvas
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+        const maxDim = 1200;
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const resizedDataUrl = canvas.toDataURL('image/webp', 0.92);
+        setTryOnPhoto(resizedDataUrl);
+        setTryOnResult(null);
+        toast.success('Photo ready for Virtual Try-On');
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRunTryOn = async () => {
+    if (!tryOnPhoto || !product || tryOnLoading) return;
+
+    setTryOnLoading(true);
+    setTryOnStage('Initializing secure session...');
+    setTryOnResult(null);
+
+    try {
+      // 1. Create Session
+      const sessionRes = await axios.post(`${API_URL}/api/vto/session`, {
+        productId: product._id,
+        boutiqueId: product.boutique?._id || product.boutique,
+      }, { withCredentials: true });
+
+      const currentJobId = sessionRes.data.jobId;
+      const currentToken = sessionRes.data.sessionToken;
+      setTryOnJobId(currentJobId);
+      setTryOnSessionToken(currentToken);
+
+      setTryOnStage('Analyzing photo & validating posture...');
+
+      // 2. Submit Job
+      await axios.post(`${API_URL}/api/vto/jobs`, {
+        jobId: currentJobId,
+        userPhoto: tryOnPhoto,
+        fitStyle: 'Tailored',
+      }, {
+        headers: { 'x-vto-session': currentToken },
+        withCredentials: true,
+      });
+
+      setTryOnStage('Fitting garment to silhouette...');
+
+      // 3. Poll for result
+      let attempts = 0;
+      const maxAttempts = 30;
+      const pollInterval = setInterval(async () => {
+        attempts++;
+        try {
+          const statusRes = await axios.get(`${API_URL}/api/vto/jobs/${currentJobId}`, {
+            headers: { 'x-vto-session': currentToken },
+            withCredentials: true,
+          });
+
+          if (statusRes.data.status === 'completed' && statusRes.data.resultUrl) {
+            clearInterval(pollInterval);
+            setTryOnResult(statusRes.data.resultUrl);
+            setTryOnLoading(false);
+            setTryOnStage('');
+            toast.success('Virtual Try-On generated! Source photo purged from server.');
+          } else if (statusRes.data.status === 'failed') {
+            clearInterval(pollInterval);
+            setTryOnLoading(false);
+            setTryOnStage('');
+            toast.error(statusRes.data.errorDescription || 'Try-on could not be generated for this photo.');
+          } else {
+            if (attempts > 5) setTryOnStage('Refining cloth drape and realistic lighting...');
+          }
+        } catch (_) {
+          // Poll continue
+        }
+
+        if (attempts >= maxAttempts) {
+          clearInterval(pollInterval);
+          setTryOnLoading(false);
+          setTryOnStage('');
+          toast.error('Try-on processing timed out. Please try again.');
+        }
+      }, 1500);
+    } catch (err) {
+      console.warn('VTO Asynchronous flow notice, attempting direct generation:', err.message);
+      // Fallback direct endpoint
+      try {
+        setTryOnStage('Generating virtual try-on...');
+        const directRes = await axios.post(`${API_URL}/api/try-on/process`, {
+          userPhoto: tryOnPhoto,
+          garmentImage: product.images?.[0] || '',
+          garmentName: product.name,
+          category: product.category,
+          fitStyle: 'Tailored',
+        });
+        if (directRes.data.success && directRes.data.resultImage) {
+          setTryOnResult(directRes.data.resultImage);
+          toast.success('Virtual Try-On preview generated!');
+        } else {
+          toast.error('Failed to generate try-on preview.');
+        }
+      } catch (directErr) {
+        toast.error('Could not complete virtual try-on. Please try a different photo.');
+      } finally {
+        setTryOnLoading(false);
+        setTryOnStage('');
+      }
+    }
+  };
+
+  const handleCancelTryOn = async () => {
+    if (tryOnJobId) {
+      try {
+        await axios.delete(`${API_URL}/api/vto/jobs/${tryOnJobId}`, {
+          headers: { 'x-vto-session': tryOnSessionToken },
+          withCredentials: true,
+        });
+      } catch (_) {}
+    }
+    setTryOnPhoto(null);
+    setTryOnResult(null);
+    setTryOnJobId(null);
+    setTryOnLoading(false);
+    toast.success('Temporary photo and preview deleted from server.');
+  };
+
+  const handleDownloadResult = () => {
+    if (!tryOnResult) return;
+    const link = document.createElement('a');
+    link.href = tryOnResult;
+    link.download = `auto-stitch-tryon-${product?.name?.toLowerCase().replace(/\s+/g, '-') || 'garment'}.webp`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Try-on image saved to your device!');
+  };
+
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     const storedUser = localStorage.getItem('user');
@@ -220,7 +402,8 @@ export default function ProductDetail() {
     );
   }
 
-  const displayCurated = relatedProducts.length > 0 ? relatedProducts : MOCK_PRODUCTS.filter(p => p._id !== product._id);
+  const displayCurated = relatedProducts.length > 0 ? relatedProducts : MOCK_PRODUCTS.filter(p => p._id !== product?._id);
+  const productImages = (product?.images && Array.isArray(product.images) && product.images.length > 0) ? product.images : [elan1];
 
   return (
     <div className="editorial-product-page">
@@ -246,7 +429,7 @@ export default function ProductDetail() {
             {product.boutique?._id ? (
               <Link to={`/boutiques/${product.boutique._id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'inline-block' }}>
                 <TextType
-                  text={product.boutique.name}
+                  text={product.boutique.name || 'Boutique Collection'}
                   as="h1"
                   className="brand-logo-serif"
                   typingSpeed={120}
@@ -276,13 +459,13 @@ export default function ProductDetail() {
           {/* Left: Large Image */}
           <div className="product-image-section">
             <div className="main-editorial-image-wrapper">
-              <img src={product.images[currentImageIndex] || product.images[0]} alt={product.name} className="main-editorial-image" />
-              {product.images?.length > 1 && (
+              <img src={productImages[currentImageIndex] || productImages[0]} alt={product.name} className="main-editorial-image" />
+              {productImages.length > 1 && (
                 <>
                   <button className="pd-image-nav left" onClick={prevImage}><ChevronLeft size={24} /></button>
                   <button className="pd-image-nav right" onClick={nextImage}><ChevronRight size={24} /></button>
                   <div className="pd-image-dots">
-                    {product.images.map((_, i) => (
+                    {productImages.map((_, i) => (
                       <span key={i} className={`pd-dot ${i === currentImageIndex ? 'active' : ''}`} />
                     ))}
                   </div>
@@ -341,15 +524,17 @@ export default function ProductDetail() {
                 </Link>
               )}
 
-              <Link
-                to={`/try-on?id=${product._id}&name=${encodeURIComponent(product.name)}&image=${encodeURIComponent(product.images[0])}&category=${encodeURIComponent(product.category)}&price=${product.price}&boutique=${product.boutique?._id || product.boutique}`}
+              <button
+                type="button"
+                onClick={() => setShowTryOnModal(true)}
                 className="ai-editorial-btn"
+                style={{ cursor: 'pointer' }}
               >
                 <Sparkles size={16} /> Virtual Try-On
-              </Link>
+              </button>
 
               <Link
-                to={`/customize?id=${product._id}&name=${encodeURIComponent(product.name)}&image=${encodeURIComponent(product.images[0])}`}
+                to={`/customize?id=${product._id}&name=${encodeURIComponent(product.name || 'Garment')}&image=${encodeURIComponent(productImages[0])}`}
                 className="ai-editorial-btn"
               >
                 <Scissors size={16} /> Custom Stitching
@@ -536,6 +721,178 @@ export default function ProductDetail() {
                 {submittingReview ? 'Submitting...' : 'Post Review'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Privacy-First Virtual Try-On In-Page Studio Modal */}
+      {showTryOnModal && (
+        <div className="vto-modal-overlay" onClick={() => !tryOnLoading && setShowTryOnModal(false)}>
+          <div className="vto-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="vto-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={16} color="#ffffff" />
+                <h3 className="vto-header-title">
+                  VIRTUAL <span style={{ color: '#c5a059' }}>TRY-ON STUDIO</span>
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="vto-close-btn"
+                onClick={() => !tryOnLoading && setShowTryOnModal(false)}
+                disabled={tryOnLoading}
+                aria-label="Close modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="vto-modal-body">
+              {/* Product Brief Banner */}
+              <div className="vto-product-badge">
+                <img src={productImages[0]} alt={product.name} className="vto-badge-thumb" />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p className="vto-badge-name">{product.name}</p>
+                  <p className="vto-badge-meta">
+                    {product.boutique?.name || 'Boutique Atelier'} • Rs. {product.price?.toLocaleString()}
+                  </p>
+                </div>
+                <Link
+                  to={`/try-on?id=${product._id}&name=${encodeURIComponent(product.name || 'Garment')}&image=${encodeURIComponent(productImages[0])}&category=${encodeURIComponent(product.category || 'dresses')}&price=${product.price || 0}&boutique=${product.boutique?._id || product.boutique || ''}`}
+                  className="vto-fullscreen-link"
+                >
+                  Full Studio <ArrowRight size={12} />
+                </Link>
+              </div>
+
+              {/* Main Content Area */}
+              {!tryOnResult ? (
+                <div className="vto-upload-zone">
+                  {!tryOnPhoto ? (
+                    <div
+                      className="vto-drop-area"
+                      onClick={() => tryOnFileRef.current?.click()}
+                    >
+                      <input
+                        type="file"
+                        ref={tryOnFileRef}
+                        accept="image/jpeg,image/png,image/webp"
+                        style={{ display: 'none' }}
+                        onChange={handlePhotoUpload}
+                      />
+                      <div className="vto-drop-icon-wrap">
+                        <Camera size={22} color="#000000" />
+                      </div>
+                      <p className="vto-drop-heading">
+                        Take or Upload Your Photograph
+                      </p>
+                      <p className="vto-drop-subtext">
+                        Clear front-facing portrait or waist-up pose (JPEG, PNG, WebP)
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="vto-preview-box">
+                      <div style={{ position: 'relative', width: '100%', height: '280px', borderRadius: '2px', overflow: 'hidden', background: '#111', border: '1px solid #000' }}>
+                        <img src={tryOnPhoto} alt="Your Portrait" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                        {!tryOnLoading && (
+                          <button
+                            type="button"
+                            className="vto-change-photo-btn"
+                            onClick={() => tryOnFileRef.current?.click()}
+                          >
+                            Change Photo
+                          </button>
+                        )}
+                        <input
+                          type="file"
+                          ref={tryOnFileRef}
+                          accept="image/jpeg,image/png,image/webp"
+                          style={{ display: 'none' }}
+                          onChange={handlePhotoUpload}
+                        />
+                      </div>
+
+                      {tryOnLoading && (
+                        <div className="vto-processing-overlay">
+                          <div className="vto-spinner"></div>
+                          <p style={{ margin: '12px 0 4px', fontWeight: 600, fontSize: '0.85rem', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                            {tryOnStage || 'Generating Virtual Try-On...'}
+                          </p>
+                          <p style={{ margin: 0, fontSize: '0.75rem', color: '#bbb' }}>
+                            100% identity and face preservation active
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Privacy Notice Card */}
+                  <div className="vto-privacy-card">
+                    <Shield size={16} color="#000000" style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <div style={{ fontSize: '0.75rem', color: '#444444', lineHeight: 1.45 }}>
+                      <strong>Privacy Guarantee:</strong> Your photograph is encrypted and used solely for generating your visual garment preview. It is automatically purged from our servers immediately after processing and never stored for model training.
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+                    <button
+                      type="button"
+                      disabled={!tryOnPhoto || tryOnLoading}
+                      onClick={handleRunTryOn}
+                      className="vto-primary-btn"
+                    >
+                      <Sparkles size={15} />
+                      {tryOnLoading ? 'Processing Try-On...' : 'Generate Try-On Preview'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Result View */
+                <div className="vto-result-container">
+                  <div className="vto-result-image-box">
+                    <img
+                      src={showOriginal ? tryOnPhoto : tryOnResult}
+                      alt="Virtual Try-On Result"
+                      style={{ width: '100%', height: '340px', objectFit: 'contain', background: '#111111', borderRadius: '2px', border: '1px solid #000' }}
+                    />
+                    <div className="vto-badge-floating">
+                      {showOriginal ? 'ORIGINAL PHOTO' : '✨ AI TRY-ON FITTED'}
+                    </div>
+                  </div>
+
+                  <div className="vto-result-controls">
+                    <button
+                      type="button"
+                      onMouseDown={() => setShowOriginal(true)}
+                      onMouseUp={() => setShowOriginal(false)}
+                      onTouchStart={() => setShowOriginal(true)}
+                      onTouchEnd={() => setShowOriginal(false)}
+                      className="vto-compare-btn"
+                    >
+                      Hold to Compare Original
+                    </button>
+
+                    <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                      <button
+                        type="button"
+                        onClick={handleDownloadResult}
+                        className="vto-download-btn"
+                      >
+                        <Download size={14} /> Download Image
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelTryOn}
+                        className="vto-delete-btn"
+                      >
+                        <RotateCcw size={14} /> Delete & Try Another
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

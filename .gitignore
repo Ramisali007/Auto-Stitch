@@ -50,3 +50,6 @@ Thumbs.db
 # Temporary / Scratch files
 scratch/
 extracted_srs.txt
+backend/uploads/vto_temp/
+uploads/vto_temp/
+

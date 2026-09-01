@@ -497,3 +497,396 @@
     padding: 40px 12px;
   }
 }
+
+/* =========================================================================
+   VIRTUAL TRY-ON STUDIO MODAL (EXACT ADMIN DASHBOARD ATELIER DESIGN)
+   ========================================================================= */
+.vto-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.25s ease-out;
+  font-family: 'Poppins', sans-serif;
+}
+
+.vto-modal-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 540px;
+  border-radius: 4px;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  border: 1px solid #000000;
+  display: flex;
+  flex-direction: column;
+  max-height: 92vh;
+  animation: modalScaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalScaleUp {
+  0% { opacity: 0; transform: scale(0.96) translateY(8px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.vto-modal-header {
+  padding: 16px 24px;
+  background: #000000;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #000000;
+}
+
+.vto-header-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: #ffffff;
+  letter-spacing: 0.08em;
+  font-family: 'Tenor Sans', 'Playfair Display', serif;
+  text-transform: uppercase;
+}
+
+.vto-close-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.vto-close-btn:hover {
+  background: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
+}
+
+.vto-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  background: #ffffff;
+}
+
+.vto-product-badge {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #ffffff;
+  padding: 12px 16px;
+  border-radius: 2px;
+  border: 1px solid #e5e5e5;
+  margin-bottom: 20px;
+  transition: border-color 0.2s;
+}
+
+.vto-product-badge:hover {
+  border-color: #000000;
+}
+
+.vto-badge-thumb {
+  width: 48px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 2px;
+  border: 1px solid #e5e5e5;
+}
+
+.vto-badge-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #000000;
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vto-badge-meta {
+  font-size: 0.78rem;
+  color: #666666;
+  margin: 3px 0 0;
+  font-weight: 400;
+}
+
+.vto-fullscreen-link {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #000000;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  padding: 6px 12px;
+  border: 1px solid #000000;
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  transition: all 0.2s;
+}
+
+.vto-fullscreen-link:hover {
+  background: #000000;
+  color: #ffffff;
+}
+
+.vto-drop-area {
+  border: 1px dashed #000000;
+  border-radius: 2px;
+  padding: 34px 20px;
+  text-align: center;
+  cursor: pointer;
+  background: #fafafa;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.vto-drop-area:hover {
+  background: #f5f5f5;
+  border-color: #000000;
+}
+
+.vto-drop-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  color: #000000;
+}
+
+.vto-drop-heading {
+  font-family: 'Tenor Sans', 'Playfair Display', serif;
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: #000000;
+  margin: 0 0 4px;
+  letter-spacing: 0.02em;
+}
+
+.vto-drop-subtext {
+  font-size: 0.78rem;
+  color: #666666;
+  max-width: 320px;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.vto-privacy-card {
+  display: flex;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-left: 3px solid #000000;
+  padding: 12px 14px;
+  border-radius: 2px;
+  margin-top: 18px;
+}
+
+.vto-privacy-card strong {
+  color: #000000;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vto-primary-btn {
+  width: 100%;
+  padding: 14px;
+  background: #000000;
+  color: #ffffff;
+  border: 1px solid #000000;
+  border-radius: 2px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.vto-primary-btn:hover:not(:disabled) {
+  background: #222222;
+  color: #ffffff;
+}
+
+.vto-primary-btn:disabled {
+  background: #f0f0f0;
+  color: #999999;
+  border: 1px solid #e0e0e0;
+  cursor: not-allowed;
+}
+
+.vto-processing-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+}
+
+.vto-spinner {
+  width: 40px;
+  height: 40px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.vto-change-photo-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #000000;
+  color: #ffffff;
+  border: 1px solid #ffffff;
+  padding: 6px 12px;
+  border-radius: 2px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.vto-change-photo-btn:hover {
+  background: #ffffff;
+  color: #000000;
+}
+
+.vto-result-image-box {
+  position: relative;
+  width: 100%;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.vto-badge-floating {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: #000000;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 5px 10px;
+  border-radius: 2px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  font-family: 'Poppins', sans-serif;
+}
+
+.vto-result-controls {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vto-compare-btn {
+  width: 100%;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #000000;
+  color: #000000;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: 'Poppins', sans-serif;
+  border-radius: 2px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s;
+}
+
+.vto-compare-btn:hover {
+  background: #f5f5f5;
+}
+
+.vto-download-btn {
+  flex: 1;
+  padding: 12px;
+  background: #000000;
+  color: #ffffff;
+  border: 1px solid #000000;
+  border-radius: 2px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.vto-download-btn:hover {
+  background: #222222;
+}
+
+.vto-delete-btn {
+  flex: 1;
+  padding: 12px;
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid #000000;
+  border-radius: 2px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.vto-delete-btn:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+
+

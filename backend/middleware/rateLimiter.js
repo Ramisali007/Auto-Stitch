@@ -53,4 +53,8 @@ const chatbotLimiter = rateLimit(15 * 60 * 1000, 20, 'Too many chatbot requests,
 // Track order limiter: 5 requests per 15 minutes
 const trackOrderLimiter = rateLimit(15 * 60 * 1000, 5, 'Too many order tracking attempts, please try again after 15 minutes.');
 
-module.exports = { globalLimiter, authLimiter, chatbotLimiter, trackOrderLimiter };
+// VTO limiter: 30 requests per 15 minutes
+const vtoLimiter = rateLimit(15 * 60 * 1000, 30, 'Too many Virtual Try-On requests, please try again after 15 minutes.');
+
+module.exports = { globalLimiter, authLimiter, chatbotLimiter, trackOrderLimiter, vtoLimiter };
+

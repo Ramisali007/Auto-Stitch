@@ -1,0 +1,2231 @@
+MASTER PROMPT — SELF-HOSTED, PRIVACY-FIRST, PRODUCTION-GRADE VIRTUAL TRY-ON
+
+You are a principal-level Software Engineer, Machine Learning Engineer, Computer Vision Engineer, Backend Architect, Cloud Architect, and Security Engineer with extensive production experience building AI-powered commercial systems.
+
+You are working on an existing multi-boutique fashion e-commerce platform.
+
+The platform contains multiple boutiques, and customers can browse products from any boutique and purchase clothing.
+
+I now want to add a Virtual Try-On (VTO) feature.
+
+The goal is to build this feature as a self-hosted AI system without relying on paid third-party Virtual Try-On APIs, unless absolutely unavoidable and explicitly approved.
+
+You must approach this as a real production engineering project, not as a simple demo.
+
+⸻
+
+1. PRIMARY USER EXPERIENCE
+
+The final user journey must be:
+
+Customer opens a boutique
+↓
+Customer opens a product
+↓
+Customer selects a garment
+↓
+Customer clicks “Virtual Try-On”
+↓
+Customer uploads her own photograph
+↓
+System securely validates and processes the image
+↓
+System automatically uses the EXACT selected product garment
+↓
+AI performs virtual try-on
+↓
+Generated image shows the SAME PERSON wearing the selected garment
+↓
+Customer can view the result
+↓
+Customer can download/save it
+↓
+Temporary server-side assets are deleted according to the privacy policy
+
+The generated image must prioritize:
+
+1. identity preservation
+2. garment fidelity
+3. realistic garment placement
+4. body/pose preservation
+5. visual quality
+6. privacy
+7. reliability
+8. performance
+
+⸻
+
+2. DO NOT REDESIGN THE EXISTING WEBSITE
+
+The current website frontend is already designed.
+
+DO NOT:
+
+* redesign the website
+* replace existing pages
+* change the visual identity
+* change the existing product page layout unnecessarily
+* replace existing components unnecessarily
+* break current functionality
+* rewrite unrelated systems
+
+First inspect the repository completely.
+
+Understand:
+
+* frontend framework
+* backend framework
+* database
+* authentication
+* product schema
+* boutique schema
+* product image system
+* S3 integration
+* existing APIs
+* current product detail page
+* cart
+* checkout
+* state management
+* UI component library
+* deployment architecture
+* environment configuration
+
+The VTO feature must be integrated into the existing product architecture with minimal disruption.
+
+⸻
+
+3. BEFORE IMPLEMENTATION — AUDIT THE REPOSITORY
+
+Before writing code:
+
+1. inspect the project structure
+2. identify frontend entry points
+3. identify backend entry points
+4. identify product model/schema
+5. identify boutique model/schema
+6. identify image storage
+7. identify current S3 implementation
+8. identify authentication/authorization
+9. identify API conventions
+10. identify current deployment setup
+11. identify existing background-job infrastructure
+12. identify whether Redis/queues already exist
+13. identify whether GPU infrastructure already exists
+
+Then produce:
+
+* current architecture summary
+* proposed architecture
+* exact files that will need modification
+* new files that will be created
+
+Do not start modifying random files before understanding the application.
+
+⸻
+
+4. CRITICAL MODEL STRATEGY
+
+DO NOT start by training a Virtual Try-On model from scratch.
+
+First evaluate high-quality existing open-source/self-hostable VTO models.
+
+At minimum investigate:
+
+* FASHN VTON v1.5
+* IDM-VTON
+* CatVTON
+* OOTDiffusion
+* other actively maintained VTO models that may be relevant
+
+Evaluate them technically AND legally.
+
+For every candidate evaluate:
+
+* image quality
+* identity preservation
+* garment fidelity
+* supported garment categories
+* pose handling
+* flat-lay garment handling
+* one-piece/dress support
+* upper-body support
+* lower-body support
+* inference speed
+* VRAM requirements
+* model size
+* CUDA compatibility
+* Python compatibility
+* PyTorch compatibility
+* ease of deployment
+* project maintenance
+* documentation
+* community activity
+* inference requirements
+* model-weight availability
+* commercial licensing
+
+⸻
+
+5. LICENSING IS A HARD REQUIREMENT
+
+Do NOT use “open source” as a synonym for “commercially usable”.
+
+For EVERY candidate verify separately:
+
+1. repository/code license
+2. model-weight license
+3. training dataset license
+4. third-party model licenses
+5. important dependency licenses
+6. commercial-use restrictions
+7. attribution requirements
+8. redistribution requirements
+9. modification rights
+10. SaaS/production restrictions
+
+Record the exact source of every license decision.
+
+Create:
+
+docs/vto/model-licenses.md
+
+with:
+
+* model name
+* version
+* source repository
+* code license
+* checkpoint/weights license
+* commercial usage status
+* relevant restrictions
+* attribution requirements
+* source link
+* verification date
+* final decision
+
+IMPORTANT:
+
+As part of the model-selection process, explicitly investigate FASHN VTON v1.5.
+
+Its current repository describes local/self-hosted inference, support for person + garment images, and categories including tops, bottoms and one-pieces, and currently lists Apache-2.0 licensing. Verify this against the actual current repository and model distribution at implementation time rather than assuming it remains unchanged.
+
+Also investigate IDM-VTON and CatVTON.
+
+Their current repositories state CC BY-NC-SA 4.0 licensing. Because this is a commercial boutique marketplace, do NOT deploy these models in production unless their licensing is confirmed to permit the intended commercial use or appropriate permission/licensing has been obtained.
+
+The final model must be selected based on BOTH:
+
+TECHNICAL QUALITY
+
+AND
+
+LEGAL/COMMERCIAL USABILITY
+
+⸻
+
+6. RECOMMENDED INITIAL STRATEGY
+
+The default strategy should be:
+
+PRETRAINED MODEL
+↓
+LOCAL GPU INFERENCE
+↓
+REAL CATALOG TESTING
+↓
+QUALITY BENCHMARK
+↓
+PRODUCTION INTEGRATION
+↓
+OPTIONAL FINE-TUNING LATER
+
+DO NOT immediately create a custom model.
+
+Do NOT spend time training from zero unless benchmark evidence proves it is necessary.
+
+⸻
+
+7. FASHN VTON POC REQUIREMENT
+
+Before integrating anything into the website, create an isolated Proof of Concept.
+
+Example:
+
+python test_vto.py 
+–person person.jpg 
+–garment garment.jpg 
+–category tops
+
+The POC must prove that:
+
+* model installs correctly
+* model loads
+* GPU inference works
+* person image works
+* garment image works
+* output is generated
+* output quality is acceptable
+* model can run locally/self-hosted
+
+Only after the POC is successful should the model be integrated into the application.
+
+⸻
+
+8. MODEL SELECTION REPORT
+
+Create:
+
+docs/vto/model-selection.md
+
+Compare the candidate models in a table:
+
+| Model | License | Commercial Use | VRAM | Speed | Identity | Garment Fidelity | Categories | Self-Hosted | Recommendation |
+
+Do not choose a model simply because a demo image looks impressive.
+
+The selected model must perform well on THIS website’s actual garments.
+
+⸻
+
+9. IMPORTANT — CUSTOMER PHOTOS MUST NOT TRAIN THE MODEL BY DEFAULT
+
+This is mandatory.
+
+Customer-uploaded photos are for inference only.
+
+DO NOT automatically:
+
+* save customer photos for training
+* add customer photos to a dataset
+* fine-tune the model from customer photos
+* retain user images indefinitely
+* use customer images for model improvement without explicit consent
+
+Default architecture:
+
+CUSTOMER PHOTO
+↓
+TEMPORARY INFERENCE DATA
+↓
+PROCESSING
+↓
+RESULT
+↓
+DELETE TEMPORARY SOURCE DATA
+
+If the business ever wants to use customer imagery for training, that must be a separate opt-in program with explicit consent, governance, retention policy and legally reviewed dataset rights.
+
+⸻
+
+10. FUTURE FINE-TUNING STRATEGY
+
+Do not fine-tune initially unless necessary.
+
+First build a benchmark using actual boutique catalog products.
+
+Test the baseline model against:
+
+* different boutiques
+* different clothing styles
+* different product image styles
+* different poses
+* different lighting
+* different body shapes
+* different backgrounds
+* different colors
+* patterns
+* embroidery
+* dresses
+* shirts
+* trousers
+* skirts
+* jackets
+* loose garments
+* fitted garments
+
+If quality is insufficient:
+
+1. improve product-image preprocessing
+2. improve person-image preprocessing
+3. improve model parameters
+4. improve category handling
+5. retry strategy
+6. only then evaluate fine-tuning
+
+⸻
+
+11. TRAINING DATA STRATEGY IF FINE-TUNING BECOMES NECESSARY
+
+Potential data sources:
+
+* legally licensed fashion datasets
+* boutique-owned imagery
+* professional model imagery with appropriate rights
+* synthetic training data
+* internally produced licensed pairs
+
+For each dataset record:
+
+* source
+* license
+* commercial usage rights
+* derivative-model rights
+* redistribution restrictions
+* consent requirements
+* attribution requirements
+
+Do not use a dataset simply because it is downloadable.
+
+IMPORTANT:
+
+Investigate dataset restrictions before using any fashion dataset for commercial training.
+
+For example, the Dress Code dataset documentation currently contains restrictions relevant to private companies. Do not make it part of a commercial training pipeline unless the rights have been verified and are appropriate for the intended use.
+
+⸻
+
+12. PRODUCT IMAGE → GARMENT PIPELINE
+
+The user should NOT manually upload the garment.
+
+The selected e-commerce product is the garment source.
+
+Flow:
+
+PRODUCT
+↓
+Trusted productId
+↓
+Backend fetches canonical product image
+↓
+Garment preprocessing
+↓
+VTO-ready garment representation
+↓
+VTO model
+
+The frontend must never be allowed to dictate an arbitrary garment URL.
+
+The backend must derive the garment from the trusted product record.
+
+⸻
+
+13. PRODUCT/BOUTIQUE SECURITY
+
+The VTO request must maintain:
+
+productId
+boutiqueId
+
+Backend must verify:
+
+* product exists
+* product belongs to the expected boutique
+* product image exists
+* image is valid
+* customer is authorized for the requested operation
+
+Prevent cross-boutique image leakage.
+
+⸻
+
+14. GARMENT PREPROCESSING
+
+Create a preprocessing pipeline capable of:
+
+* image normalization
+* resolution normalization
+* background analysis
+* garment segmentation where needed
+* garment crop
+* whitespace removal
+* category classification
+* mask generation when required
+* format conversion when required
+
+Cache processed garment representations because catalog garments are not personal user data.
+
+Do NOT repeat expensive garment preprocessing for every user request when it can safely be reused.
+
+⸻
+
+15. GARMENT CATEGORIES
+
+Build an internal normalized taxonomy:
+
+* tops
+* shirts
+* t-shirts
+* blouses
+* sweaters
+* jackets
+* coats
+* bottoms
+* trousers
+* jeans
+* pants
+* skirts
+* shorts
+* dresses
+* jumpsuits
+* one-piece garments
+
+Map database categories into the normalized VTO category system.
+
+Do not pass arbitrary category strings directly into the model.
+
+⸻
+
+16. CUSTOMER PHOTO VALIDATION
+
+Before inference validate:
+
+* supported file format
+* MIME type
+* actual file signature/magic bytes
+* maximum file size
+* minimum resolution
+* image dimensions
+* valid image decoding
+* orientation
+* one visible person
+* sufficient body visibility
+* acceptable image quality
+* unsupported pose detection where applicable
+
+Reject:
+
+* corrupted images
+* zero-person images
+* multi-person images
+* extremely low-resolution images
+* images where the relevant body region is completely missing
+
+Return friendly frontend errors.
+
+Do not expose internal Python/ML errors to customers.
+
+⸻
+
+17. PRIVACY-FIRST STORAGE ARCHITECTURE
+
+The customer’s photograph is sensitive personal data.
+
+Privacy must be designed into the architecture, not added later.
+
+Preferred flow:
+
+Browser
+|
+| HTTPS
+v
+Temporary private S3 object
+|
+v
+VTO processing worker
+|
+v
+Temporary generated result
+|
+v
+Frontend
+|
++—— download/save
+|
++—— cancel
+|
++—— session expires
+|
+v
+Cleanup
+
+S3 bucket must be PRIVATE.
+
+Never make customer images publicly accessible.
+
+⸻
+
+18. TEMPORARY S3 OBJECT NAMING
+
+Use unpredictable object keys.
+
+Bad:
+
+/users/john/photo.jpg
+
+Better:
+
+/vto/temp/{random-uuid}/person/{random-id}.webp
+
+Example:
+
+vto/temp/
+9c6…/
+person/
+9a8….webp
+garment/
+catalog-garment.webp
+result/
+result.webp
+
+Do not expose meaningful personal information through object names.
+
+⸻
+
+19. NO AWS CREDENTIALS IN FRONTEND
+
+The frontend must NEVER receive:
+
+AWS access keys
+AWS secret keys
+long-lived IAM credentials
+
+Use:
+
+* backend-generated short-lived pre-signed upload URLs
+* or secure backend upload
+* private bucket
+* restricted IAM roles
+
+⸻
+
+20. S3 ENCRYPTION
+
+Use server-side encryption.
+
+Verify the current bucket configuration.
+
+S3 currently provides SSE-S3 encryption by default for new objects, while SSE-KMS is available when stronger customer-managed key control is required.
+
+Determine whether:
+
+SSE-S3
+
+or
+
+SSE-KMS
+
+is appropriate for this project’s actual threat model.
+
+Do not claim that encryption alone makes the system “fully secure”.
+
+⸻
+
+21. TEMPORARY RETENTION POLICY
+
+Every VTO job must have:
+
+jobId
+createdAt
+expiresAt
+status
+
+Example object structure:
+
+vto/temp/{jobId}/person.webp
+vto/temp/{jobId}/garment.webp
+vto/temp/{jobId}/result.webp
+
+All customer-related assets are temporary by default.
+
+Use BOTH:
+
+1. application-level deletion
+2. S3 lifecycle expiration
+
+Lifecycle expiration is a safety net.
+
+It is NOT a replacement for immediate deletion when the user cancels or processing finishes.
+
+⸻
+
+22. EXACT DELETE REQUIREMENT
+
+When customer uploads:
+
+TEMPORARILY STORE
+
+When processing starts:
+
+PROCESS
+
+When result is returned:
+
+RETAIN ONLY FOR THE NECESSARY TEMPORARY WINDOW
+
+When user cancels:
+
+DELETE TEMPORARY ASSETS
+
+When processing is complete:
+
+DELETE the original customer source image as soon as it is no longer technically required.
+
+The person’s source photo must NOT remain in S3 simply because the user used Virtual Try-On.
+
+⸻
+
+23. IMPORTANT — DOWNLOAD DOES NOT MEAN PERMANENT SERVER STORAGE
+
+If the user clicks Download:
+
+the browser may save the image locally.
+
+Do NOT automatically create permanent server-side storage.
+
+Permanent “My Try-On History” should be a separate explicit feature.
+
+If introduced later:
+
+* explicit user action
+* explicit retention policy
+* explicit consent
+* secure private storage
+* proper deletion controls
+
+⸻
+
+24. PRIVACY IS MORE THAN DELETING S3
+
+Investigate all possible copies.
+
+Prevent user images from leaking into:
+
+* application logs
+* debug logs
+* worker logs
+* exception reports
+* APM systems
+* analytics tools
+* CDN caches
+* reverse proxy caches
+* local Docker volumes
+* GPU worker temp directories
+* crash dumps
+* backups where applicable
+
+Never log:
+
+* base64 image data
+* raw image bytes
+* image contents
+* unnecessary signed URLs
+* sensitive metadata
+
+⸻
+
+25. EXIF PRIVACY
+
+Before processing, strip unnecessary EXIF metadata.
+
+Remove unnecessary:
+
+* GPS information
+* camera information
+* device information
+* original filename
+* unnecessary metadata
+
+Normalize orientation.
+
+Keep only technical information genuinely necessary.
+
+⸻
+
+26. CLIENT-SIDE RESIZING
+
+Investigate resizing the image in the browser before upload.
+
+Potential flow:
+
+phone camera image
+↓
+client-side resize
+↓
+reasonable VTO resolution
+↓
+secure upload
+
+Benefits:
+
+* lower bandwidth
+* lower storage
+* faster upload
+* reduced processing burden
+
+Do not compress so aggressively that VTO quality decreases.
+
+Benchmark the appropriate dimensions experimentally.
+
+⸻
+
+27. MODEL INPUT PIPELINE
+
+Person image:
+
+PERSON PHOTO
+↓
+orientation
+↓
+resolution normalization
+↓
+person detection
+↓
+pose estimation
+↓
+human parsing/segmentation if needed
+↓
+quality validation
+
+Garment:
+
+PRODUCT IMAGE
+↓
+normalization
+↓
+segmentation if needed
+↓
+category
+↓
+VTO representation
+
+Then:
+
+PERSON + GARMENT + CATEGORY + REQUIRED AUXILIARY DATA
+
+→ VTO MODEL
+
+⸻
+
+28. IDENTITY PRESERVATION
+
+This is one of the most important quality requirements.
+
+The output must remain recognizably the SAME PERSON.
+
+Preserve as much as technically possible:
+
+* face
+* hair
+* skin appearance
+* body proportions
+* pose
+* hands
+* overall composition
+* background
+
+The system must NOT behave like a generic text-to-image generator.
+
+We are performing garment transfer, not generating a new person.
+
+⸻
+
+29. GARMENT FIDELITY
+
+The exact selected garment must remain visually faithful.
+
+Preserve:
+
+* color
+* print
+* embroidery
+* logos
+* stripes
+* buttons
+* neckline
+* sleeves
+* pockets
+* texture
+* silhouette
+* relative length
+* important visual details
+
+A beautiful output showing a different garment is considered a failure.
+
+⸻
+
+30. “DO NOT REDRAW THE WOMAN”
+
+The intended behavior is conceptually:
+
+ORIGINAL PERSON
+↓
+PRESERVE PERSON
+↓
+PRESERVE IDENTITY + BODY + CONTEXT
+↓
+TRANSFER GARMENT
+↓
+REALISTIC CLOTHING BOUNDARIES / WRINKLES / SHADOWS
+↓
+FINAL RESULT
+
+NOT:
+
+ORIGINAL PERSON
+↓
+RE-GENERATE PERSON
+↓
+NEW PERSON WEARING SIMILAR CLOTHES
+
+⸻
+
+31. VTO MODEL ADAPTER ARCHITECTURE
+
+Do not tightly couple business logic to one model.
+
+Create an abstraction such as:
+
+VirtualTryOnEngine
+
+Methods:
+
+initialize()
+healthCheck()
+preprocessPerson()
+preprocessGarment()
+generate()
+postprocess()
+
+Then implement:
+
+FashnVtonAdapter
+
+and allow future:
+
+AlternativeVtonAdapter
+
+This makes future model replacement much easier.
+
+⸻
+
+32. BACKEND ARCHITECTURE
+
+Recommended architecture:
+
+Frontend
+|
+v
+Backend API
+|
++—— Database
+|
++—— S3
+|
++—— Job Queue
+|
+v
+VTO GPU Worker
+|
+v
+VTO Model
+
+Do not run heavy GPU inference inside the regular request/response API process.
+
+⸻
+
+33. ASYNCHRONOUS JOB PROCESSING
+
+VTO is computationally expensive.
+
+Use a job queue.
+
+Possible technologies depending on the existing project:
+
+* Redis + BullMQ
+* RabbitMQ
+* SQS
+* existing queue infrastructure
+
+Choose the smallest reliable architecture compatible with the current project.
+
+Do not introduce unnecessary distributed complexity.
+
+⸻
+
+34. GPU WORKER
+
+Build a dedicated VTO inference worker.
+
+Technology should be compatible with the selected model, typically:
+
+* Python
+* PyTorch
+* CUDA
+* model-specific dependencies
+
+The worker should:
+
+* load the model once
+* keep it warm
+* process jobs
+* enforce concurrency
+* handle timeouts
+* handle errors
+* handle GPU OOM
+* clean local temporary files
+* expose readiness/health state
+
+Do NOT load the model from disk on every request.
+
+⸻
+
+35. MODEL PRELOADING
+
+At worker startup:
+
+1. load model
+2. load processors
+3. load auxiliary components
+4. run a warm-up inference
+5. mark worker READY
+
+Until the model is actually ready, readiness should remain false.
+
+⸻
+
+36. GPU / HARDWARE BENCHMARKING
+
+Measure actual:
+
+* VRAM consumption
+* model load time
+* preprocessing time
+* inference time
+* postprocessing time
+* total latency
+* concurrent requests
+* GPU utilization
+* memory fragmentation
+
+Do not invent performance numbers.
+
+Document measured values.
+
+⸻
+
+37. CONFIGURATION
+
+Use environment/config variables for:
+
+VTO_ENABLED
+VTO_MODEL
+VTO_MODEL_VERSION
+VTO_DEVICE
+VTO_DTYPE
+VTO_STEPS
+VTO_GUIDANCE
+VTO_WIDTH
+VTO_HEIGHT
+VTO_MAX_RETRIES
+VTO_TIMEOUT_SECONDS
+VTO_UPLOAD_EXPIRY_SECONDS
+VTO_RESULT_EXPIRY_SECONDS
+
+Do not scatter experimental values throughout source code.
+
+⸻
+
+38. API DESIGN
+
+Adapt naming to the existing application’s API conventions.
+
+Possible endpoints:
+
+POST /api/vto/session
+
+POST /api/vto/upload-url
+
+POST /api/vto/jobs
+
+GET /api/vto/jobs/:jobId
+
+GET /api/vto/result/:jobId
+
+DELETE /api/vto/jobs/:jobId
+
+Every endpoint must enforce authentication/authorization where applicable.
+
+⸻
+
+39. VTO JOB RECORD
+
+Create a job record containing metadata such as:
+
+id
+userId
+productId
+boutiqueId
+status
+modelVersion
+personObjectKey
+garmentObjectKey
+resultObjectKey
+createdAt
+startedAt
+completedAt
+expiresAt
+deletedAt
+failureCode
+
+DO NOT store image blobs in the database.
+
+DO NOT store customer images as database blobs.
+
+⸻
+
+40. IDOR / AUTHORIZATION PROTECTION
+
+This is mandatory.
+
+A user must NOT be able to access another user’s image/result by changing:
+
+jobId
+
+or:
+
+object key
+
+For:
+
+GET /api/vto/result/:jobId
+
+verify ownership/authorization.
+
+Do not treat UUID obscurity as a security mechanism.
+
+⸻
+
+41. RATE LIMITING
+
+VTO consumes GPU resources.
+
+Implement configurable:
+
+* per-user rate limit
+* per-IP rate limit where appropriate
+* concurrent-job limit
+* queue limit
+* abuse prevention
+
+Do not allow unlimited generation.
+
+Do not expose expensive internal infrastructure through unrestricted endpoints.
+
+⸻
+
+42. IDEMPOTENCY
+
+Prevent accidental duplicate inference when the customer taps the button multiple times.
+
+Use:
+
+* frontend button locking
+* backend state validation
+* idempotency keys where appropriate
+
+⸻
+
+43. CANCELLATION
+
+Cancellation must be implemented at the backend level.
+
+When the customer clicks:
+
+Cancel
+
+backend must:
+
+* mark job cancelled
+* stop queued job if possible
+* prevent unnecessary inference
+* clean temporary assets
+
+If a currently running GPU job cannot be safely interrupted, mark cancellation and clean artifacts when processing exits.
+
+⸻
+
+44. BROWSER ABANDONMENT
+
+The user may upload a photo and immediately close the website.
+
+Therefore deletion cannot depend only on frontend JavaScript.
+
+Backend cleanup + expiration policies must handle abandoned jobs.
+
+⸻
+
+45. AUTOMATIC CLEANUP
+
+Create a cleanup process that finds:
+
+expired jobs
+failed jobs
+cancelled jobs
+abandoned jobs
+
+and deletes:
+
+person assets
+temporary garment assets where applicable
+temporary generated result
+local worker files
+
+Use S3 lifecycle expiration as additional defense-in-depth.
+
+⸻
+
+46. DELETE VERIFICATION
+
+Deletion must be testable.
+
+After cleanup, verify expected temporary objects are gone.
+
+Track operationally:
+
+delete attempted
+delete succeeded
+delete failed
+
+A deletion failure should be observable through monitoring/alerts without exposing the image.
+
+⸻
+
+47. FRONTEND INTEGRATION
+
+Add Virtual Try-On to the existing product page.
+
+Do not redesign the product page.
+
+Use the existing design system.
+
+Possible UI flow:
+
+[ Virtual Try-On ]
+
+↓
+
+Selected Product Preview
+
+↓
+
+Upload Your Photo
+
+↓
+
+Privacy Notice
+
+↓
+
+Validation
+
+↓
+
+Processing
+
+↓
+
+Generated Result
+
+↓
+
+Download / Try Again / Close
+
+⸻
+
+48. PRIVACY MESSAGE
+
+The UI must clearly explain the actual technical behavior.
+
+Example concept:
+
+“Your photo is used to generate your Virtual Try-On preview. Temporary processing files are automatically removed according to our retention policy.”
+
+Do NOT claim:
+
+“we never store your photo”
+
+because temporary storage may technically occur.
+
+The wording must accurately reflect the implementation.
+
+⸻
+
+49. PHOTO UPLOAD GUIDANCE
+
+Explain:
+
+* one person only
+* clear photo
+* sufficient body visibility
+* reasonable lighting
+* supported file type
+* maximum file size
+
+Make the guidance easy for nontechnical users.
+
+Optimize upload flow for:
+
+* phone camera
+* phone gallery
+* tablet
+* desktop upload
+
+⸻
+
+50. PROCESSING UX
+
+Use meaningful states such as:
+
+Preparing image…
+Analyzing photo…
+Preparing garment…
+Generating virtual try-on…
+Finalizing result…
+
+Do not display fake percentages.
+
+Do not pretend the system is 80% complete if no real progress metric exists.
+
+⸻
+
+51. RESULT UX
+
+Show:
+
+Selected Product
++
+Generated Try-On Result
+
+Optional:
+
+Before / After comparison
+
+The customer should always know which product was applied.
+
+⸻
+
+52. DO NOT CLAIM PERFECT FIT
+
+Virtual Try-On is an appearance preview.
+
+It is NOT automatically a precise size/fit measurement tool.
+
+Do not tell customers:
+
+“This will definitely fit you.”
+
+Instead:
+
+“AI-generated visual preview. Actual fit may vary.”
+
+Size recommendation should be a separate validated feature.
+
+⸻
+
+53. QUALITY CONTROL
+
+Create an evaluation dataset.
+
+Include:
+
+* different body types
+* different poses
+* different lighting
+* different backgrounds
+* different skin tones
+* different hairstyles
+* upper-body garments
+* lower-body garments
+* dresses
+* skirts
+* pants
+* jackets
+* patterns
+* embroidery
+* loose clothing
+* fitted clothing
+* flat-lay garments
+* mannequin images
+* model-shot product images
+
+⸻
+
+54. QUALITY METRICS
+
+Evaluate:
+
+1. identity preservation
+2. garment fidelity
+3. pose preservation
+4. body consistency
+5. face consistency
+6. hand quality
+7. background preservation
+8. texture preservation
+9. artifact frequency
+10. latency
+
+Do not rely only on numerical metrics.
+
+Human visual evaluation is required.
+
+⸻
+
+55. FAILURE MATRIX
+
+Create a report:
+
+Scenario | Result | Acceptable? | Root Cause | Fix
+
+Examples:
+
+* person heavily cropped
+* multiple people
+* side pose
+* dress
+* flat-lay garment
+* dark garment
+* patterned garment
+* loose garment
+* complex sleeve
+* hands covering clothing
+
+⸻
+
+56. OPTIONAL QUALITY SCORER
+
+Evaluate whether generated output is obviously broken.
+
+Potential checks:
+
+* face consistency
+* blur detection
+* severe artifact detection
+* person consistency
+* garment-region sanity
+
+If result is below threshold:
+
+perform a bounded retry
+
+or
+
+ask customer for another photo.
+
+Do not generate unlimited results.
+
+⸻
+
+57. RETRY CONTROL
+
+Maximum retries must be configurable.
+
+Potential changes per retry:
+
+* seed
+* inference parameters
+* preprocessing
+* resolution
+
+Keep retries bounded to control:
+
+* GPU cost
+* latency
+* storage
+* privacy exposure
+
+⸻
+
+58. IMAGE FORMAT
+
+Evaluate:
+
+* JPEG
+* WebP
+* PNG
+* AVIF
+
+based on:
+
+* quality
+* file size
+* browser support
+* transparency
+
+Choose the format based on real benchmarks.
+
+⸻
+
+59. BACKGROUND PRESERVATION
+
+The VTO pipeline should avoid unnecessary changes to:
+
+* room
+* walls
+* furniture
+* lighting context
+* hairstyle
+* background objects
+
+unless the selected model inherently requires some reconstruction.
+
+The goal is to change the garment, not the whole photograph.
+
+⸻
+
+60. CUSTOMER IMAGE TRAINING POLICY
+
+The production inference pipeline must NOT write customer images into:
+
+/training
+/training-data
+/datasets
+/model-improvement
+
+Customer data must remain separated from research/training data.
+
+If future fine-tuning is required, create a legally governed dataset independently.
+
+⸻
+
+61. SECURITY REQUIREMENTS
+
+Implement:
+
+* HTTPS
+* authentication
+* authorization
+* private S3
+* pre-signed short-lived URLs
+* least-privilege IAM
+* rate limiting
+* request-size limits
+* MIME validation
+* magic-byte validation
+* safe image decoding
+* secure filenames/object keys
+* CORS restrictions
+* CSRF protection where applicable
+* job ownership checks
+* queue limits
+
+⸻
+
+62. SECURITY TESTING
+
+Test:
+
+* unauthorized result access
+* IDOR
+* expired signed URL
+* replayed signed URL
+* malicious file
+* oversized upload
+* fake MIME type
+* corrupted image
+* path traversal
+* concurrent submissions
+* duplicate requests
+* cancelled jobs
+* expired jobs
+* worker crashes
+* GPU OOM
+
+⸻
+
+63. PRIVACY TESTING
+
+Perform this exact test:
+
+1. upload user photo
+2. verify temporary S3 object exists
+3. run VTO
+4. receive result
+5. cancel/delete according to flow
+6. confirm source photo is deleted
+7. confirm temporary result is deleted according to policy
+8. inspect application logs
+9. inspect worker temp files
+10. inspect network/API responses
+11. confirm no public S3 access
+12. confirm no customer image appears in logs
+
+⸻
+
+64. MONITORING
+
+Track operational metrics:
+
+* VTO jobs
+* success rate
+* failure rate
+* average latency
+* p95 latency
+* queue depth
+* GPU utilization
+* GPU memory
+* retries
+* cleanup successes
+* cleanup failures
+* cancellation rate
+
+NEVER use images themselves as monitoring payloads.
+
+⸻
+
+65. SAFE LOGGING
+
+Log:
+
+jobId
+productId
+boutiqueId
+status
+modelVersion
+duration
+failureCode
+timestamps
+
+Do NOT log:
+
+* image bytes
+* base64 images
+* raw customer filenames unnecessarily
+* unnecessary signed URLs
+* image metadata that is not required
+
+⸻
+
+66. DOCKER / GPU DEPLOYMENT
+
+If the project uses Docker:
+
+separate:
+
+Frontend
+Backend
+Queue
+VTO Worker
+
+The VTO worker should have the appropriate CUDA/PyTorch environment.
+
+Do not put huge ML dependencies into frontend containers.
+
+Document:
+
+* CUDA version
+* PyTorch version
+* Python version
+* GPU requirements
+* driver requirements
+* model installation
+* model download
+* startup commands
+
+⸻
+
+67. SCALABILITY
+
+Version 1 should remain simple:
+
+1 GPU worker
+1 model
+1 queue
+1 S3 storage flow
+1 API
+1 VTO UI
+
+Then scale horizontally later.
+
+Possible future architecture:
+
+          Load Balancer
+                |
+         +------+------+
+         |             |
+     API Worker    API Worker
+         |
+       Queue
+         |
+   +-----+------+
+   |            |
+GPU Worker   GPU Worker
+   |            |
+ Model        Model
+
+Do not introduce this complexity before it is required.
+
+⸻
+
+68. COST CONTROL
+
+Track:
+
+* GPU cost per inference
+* average inference duration
+* queue capacity
+* storage usage
+* bandwidth
+* preprocessing cost
+
+Control:
+
+* retry count
+* max resolution
+* concurrency
+* queue length
+* per-user rate limits
+
+⸻
+
+69. MODEL VERSIONING
+
+Every result should internally record:
+
+model name
+model version
+pipeline version
+preprocessing version
+
+Example:
+
+modelVersion:
+fashn-vton-1.5
+
+pipelineVersion:
+vto-pipeline-1.0.0
+
+This is essential when models are updated.
+
+⸻
+
+70. REPRODUCIBILITY
+
+Where supported, record:
+
+* random seed
+* inference parameters
+* model version
+* pipeline version
+* category
+* resolution
+
+Do NOT retain customer source images solely for reproducibility.
+
+⸻
+
+71. LOCAL DEVELOPMENT
+
+Create a documented local workflow.
+
+Example:
+
+Frontend
+Backend
+Database
+Queue
+VTO Worker
+S3-compatible/local storage
+
+Use isolated development storage.
+
+Never mix production customer data with development.
+
+⸻
+
+72. ENVIRONMENT VARIABLES
+
+Create/update:
+
+.env.example
+
+Document:
+
+VTO_ENABLED=true
+VTO_MODEL=…
+VTO_MODEL_VERSION=…
+VTO_DEVICE=cuda
+VTO_DTYPE=…
+AWS_REGION=…
+AWS_S3_BUCKET=…
+AWS_S3_VTO_PREFIX=vto/temp/
+VTO_UPLOAD_EXPIRY_SECONDS=…
+VTO_RESULT_EXPIRY_SECONDS=…
+VTO_JOB_TIMEOUT_SECONDS=…
+VTO_MAX_RETRIES=…
+
+Never commit secrets.
+
+⸻
+
+73. AUTOMATED TESTING
+
+Create:
+
+unit tests
+API tests
+integration tests
+storage tests
+queue tests
+cleanup tests
+security tests
+VTO smoke tests
+
+At minimum test:
+
+* job creation
+* upload
+* product binding
+* inference
+* result retrieval
+* cancellation
+* deletion
+* expiry
+* authorization
+* rate limiting
+
+⸻
+
+74. MOBILE TESTING
+
+The VTO feature must work correctly on:
+
+* Android phones
+* iPhones
+* tablets
+* laptops
+* desktop
+* high DPI displays
+
+Use the existing website’s responsive system.
+
+Do NOT create desktop-only UI.
+
+The upload flow must be optimized for camera/gallery selection.
+
+⸻
+
+75. ACCESSIBILITY
+
+Ensure:
+
+* keyboard accessibility
+* focus visibility
+* accessible labels
+* semantic controls
+* readable errors
+* contrast
+* loading announcements where appropriate
+
+Animations must not interfere with usability.
+
+⸻
+
+76. VTO PRIVACY DOCUMENT
+
+Create:
+
+docs/vto/privacy.md
+
+Document:
+
+* what is uploaded
+* why it is uploaded
+* where it is stored
+* encryption
+* temporary retention
+* deletion flow
+* abandoned-session cleanup
+* whether customer data is used for training
+* what is logged
+* how users can request deletion if applicable
+
+Everything written there must exactly match the technical implementation.
+
+⸻
+
+77. VTO SECURITY DOCUMENT
+
+Create:
+
+docs/vto/security.md
+
+Document:
+
+* threat model
+* S3 security
+* signed URLs
+* authentication
+* authorization
+* IDOR prevention
+* rate limiting
+* upload validation
+* logging
+* cleanup
+* secrets management
+
+⸻
+
+78. VTO ARCHITECTURE DOCUMENT
+
+Create:
+
+docs/vto/architecture.md
+
+Include a diagram similar to:
+
+CUSTOMER
+|
+v
+EXISTING WEBSITE
+|
+v
+VTO UI
+|
+v
+BACKEND API
+|
++–––– DATABASE
+|
++–––– PRIVATE S3
+|
++–––– JOB QUEUE
+|
+v
+GPU WORKER
+|
+v
+VTO MODEL
+|
+v
+GENERATED RESULT
+|
+v
+PRIVATE S3
+|
+v
+CUSTOMER
+
+And separately:
+
+CLEANUP SERVICE
+|
+v
+EXPIRED VTO JOBS
+|
+v
+DELETE TEMPORARY OBJECTS
+
+⸻
+
+79. MODEL TRAINING DOCUMENT
+
+Create:
+
+docs/vto/training.md
+
+Document:
+
+* why training from zero is not initially required
+* when fine-tuning should be considered
+* legal dataset requirements
+* dataset preparation
+* train/validation/test split
+* subject-level split
+* evaluation methodology
+* experiment tracking
+* checkpoint selection
+* model versioning
+
+IMPORTANT:
+
+Do not create artificial benchmark scores.
+
+All reported metrics must be measured.
+
+⸻
+
+80. DATA LEAKAGE PREVENTION
+
+If custom training happens in the future:
+
+do not put identical subjects in training and evaluation sets.
+
+Prefer subject-level separation.
+
+Otherwise identity metrics may look artificially strong.
+
+⸻
+
+81. LICENSE VERIFICATION MUST HAPPEN AGAIN AT IMPLEMENTATION TIME
+
+Do not rely on old assumptions.
+
+Before final model selection:
+
+* open the actual repository
+* inspect actual license
+* inspect checkpoint distribution
+* inspect model card
+* inspect dependency licenses
+* inspect terms/restrictions
+* record verification date
+
+If licensing is ambiguous:
+
+DO NOT silently assume commercial permission.
+
+Flag the ambiguity.
+
+⸻
+
+82. QUALITY OVER “WOW DEMO”
+
+The goal is not a flashy demo.
+
+The goal is:
+
+REAL PRODUCT
++
+REAL CUSTOMER PHOTO
++
+REAL GARMENT
+
+USEFUL VIRTUAL TRY-ON
+
+The generated image must be good enough to help a customer judge the garment visually.
+
+⸻
+
+83. NO GUARANTEE OF 100% ACCURACY
+
+Do not market the system as:
+
+“100% accurate”
+
+“exactly how you will look”
+
+“guaranteed fit”
+
+Instead describe it as:
+
+AI-generated visual preview.
+
+Physical garment fit depends on:
+
+* actual size
+* garment cut
+* fabric
+* measurements
+* body movement
+
+⸻
+
+84. CRITICAL PRODUCTION PRINCIPLE
+
+Do not declare the feature completed because:
+
+* frontend works
+* API works
+* model loads
+
+The feature is complete only when:
+
+actual customer-style photos
++
+actual catalog garment images
++
+real inference
++
+privacy cleanup
++
+authorization
++
+mobile UX
++
+production-like GPU
+
+have all been tested.
+
+⸻
+
+85. IMPLEMENTATION PHASES
+
+Follow this sequence:
+
+PHASE 1
+Repository audit
+
+PHASE 2
+Architecture design
+
+PHASE 3
+Open-source model research
+
+PHASE 4
+Licensing verification
+
+PHASE 5
+FASHN VTON / candidate model POC
+
+PHASE 6
+Real garment benchmark
+
+PHASE 7
+Person-image pipeline
+
+PHASE 8
+Secure temporary S3 pipeline
+
+PHASE 9
+GPU worker
+
+PHASE 10
+Queue integration
+
+PHASE 11
+Backend API
+
+PHASE 12
+Frontend product-page integration
+
+PHASE 13
+Cleanup/deletion
+
+PHASE 14
+Security testing
+
+PHASE 15
+Privacy testing
+
+PHASE 16
+Quality benchmarking
+
+PHASE 17
+Performance benchmarking
+
+PHASE 18
+Production hardening
+
+⸻
+
+86. REQUIRED FINAL DELIVERABLES
+
+Before declaring the task complete, produce:
+
+1. Architecture analysis
+2. Model comparison
+3. Licensing analysis
+4. Recommended model
+5. Why that model was selected
+6. Hardware requirements
+7. GPU requirements
+8. Exact setup instructions
+9. Environment variables
+10. Backend API documentation
+11. Database schema
+12. S3 architecture
+13. Queue architecture
+14. Worker architecture
+15. Privacy architecture
+16. Security architecture
+17. Cleanup/deletion architecture
+18. Test results
+19. Quality benchmark
+20. Performance benchmark
+21. Known limitations
+22. Future fine-tuning strategy
+23. Deployment guide
+24. Rollback plan
+25. Changed files
+26. New files
+27. Remaining risks
+
+⸻
+
+87. FINAL QUALITY GATE
+
+Do not mark the feature complete until all applicable items below pass:
+
+[ ] Existing website remains intact
+[ ] Product page integration works
+[ ] Selected product is automatically used
+[ ] Product/boutique binding is secure
+[ ] Person upload works
+[ ] Upload validation works
+[ ] One-person detection works
+[ ] VTO model works locally
+[ ] Real GPU inference works
+[ ] Identity preservation is acceptable
+[ ] Garment fidelity is acceptable
+[ ] Dresses work
+[ ] Tops work
+[ ] Bottoms work where supported
+[ ] Flat-lay garments are tested
+[ ] Failure cases are documented
+[ ] S3 bucket is private
+[ ] Signed URLs are short-lived
+[ ] Customer image is temporary
+[ ] Customer source image is deleted when no longer needed
+[ ] Cancel flow triggers cleanup
+[ ] Abandoned jobs are automatically cleaned
+[ ] S3 lifecycle expiry exists
+[ ] Worker temp files are cleaned
+[ ] Image data is not present in logs
+[ ] IDOR protection exists
+[ ] Rate limiting exists
+[ ] Queue limits exist
+[ ] Retry limit exists
+[ ] Mobile flow works
+[ ] Desktop flow works
+[ ] Security tests pass
+[ ] Privacy tests pass
+[ ] Actual benchmark exists
+[ ] Model license is verified
+[ ] Model-weight license is verified
+[ ] Dataset rights are documented
+[ ] Customer images are NOT used for training by default
+[ ] Documentation is complete
+
+⸻
+
+88. NON-NEGOTIABLE ENGINEERING RULE
+
+Do not simply give me a high-level explanation.
+
+Actually inspect the existing application.
+
+Actually implement the feature.
+
+Actually run the model.
+
+Actually run inference.
+
+Actually test real catalog garments.
+
+Actually test realistic user photographs.
+
+Actually test deletion.
+
+Actually test authorization.
+
+Actually benchmark GPU performance.
+
+Actually inspect generated output quality.
+
+If something fails, find the root cause and fix it.
+
+If a requirement cannot be achieved with the selected model, clearly explain why and propose the most practical technically/legal alternative.
+
+Do not hide limitations.
+
+Do not invent benchmark numbers.
+
+Do not claim commercial licensing without verification.
+
+Do not retain customer photographs unnecessarily.
+
+Do not use paid VTO APIs unless explicitly approved.
+
+The final result should be a self-hosted, privacy-first, commercially deployable Virtual Try-On subsystem integrated into the existing multi-boutique e-commerce platform, with a clean architecture that allows future model replacement and optional fine-tuning.

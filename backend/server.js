@@ -70,6 +70,7 @@ app.use('/api/support', require('./routes/supportRoutes'));
 app.use('/api/stores', require('./routes/storeRoutes'));
 app.use('/api', require('./routes/subscriptionRoutes'));
 app.use('/api/try-on', require('./routes/tryOnRoutes'));
+app.use('/api/vto', require('./routes/tryOnRoutes'));
 app.use('/api/recommendations', require('./routes/recommendationRoutes'));
 app.use('/api/coupons', require('./routes/couponRoutes'));
 

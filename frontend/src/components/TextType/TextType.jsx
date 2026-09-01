@@ -33,7 +33,10 @@ const TextType = ({
   const cursorRef = useRef(null);
   const containerRef = useRef(null);
 
-  const textArray = useMemo(() => (Array.isArray(text) ? text : [text]), [text]);
+  const textArray = useMemo(() => {
+    if (!text) return [''];
+    return Array.isArray(text) ? text.map(t => (t ? String(t) : '')) : [String(text)];
+  }, [text]);
 
   const getRandomSpeed = useCallback(() => {
     if (!variableSpeed) return typingSpeed;
