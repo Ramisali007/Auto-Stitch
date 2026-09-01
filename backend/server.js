@@ -17,11 +17,25 @@ const app = express();
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
+// Dynamic CORS configuration (Supports Localhost, Vercel Production & Previews)
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'https://autostitch-eight.vercel.app',
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', process.env.CLIENT_URL],
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || origin.includes('onrender.com')) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Permissive in production for all client storefronts
+    }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-vto-session', 'X-Requested-With', 'Accept'],
 }));
 
 // Static Folders
