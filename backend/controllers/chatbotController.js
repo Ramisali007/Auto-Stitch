@@ -80,11 +80,10 @@ Instructions:
 - If you don't know something, suggest they contact our support or visit the Contact page.`;
 
     const candidateModels = [
-      "openai/gpt-oss-120b",
-      "openai/gpt-oss-20b",
-      "qwen/qwen3.6-27b",
-      "groq/compound",
-      "llama3-8b-8192"
+      "llama-3.3-70b-versatile",
+      "llama-3.1-8b-instant",
+      "mixtral-8x7b-32768",
+      "gemma2-9b-it"
     ];
 
     let completion = null;
@@ -98,21 +97,34 @@ Instructions:
             { role: "system", content: systemPrompt },
             { role: "user", content: message },
           ],
+          temperature: 0.7,
+          max_tokens: 300,
         });
         if (completion?.choices?.[0]?.message?.content) {
           break;
         }
       } catch (err) {
         lastError = err;
-        console.log(`[Groq] Model ${modelName} failed, trying next candidate...`);
+        console.log(`[Groq] Model ${modelName} notice: ${err.message}, trying next candidate...`);
       }
     }
 
-    if (!completion || !completion.choices?.[0]?.message?.content) {
-      throw lastError || new Error('No Groq models available');
+    if (completion?.choices?.[0]?.message?.content) {
+      return res.json({ success: true, reply: completion.choices[0].message.content });
     }
 
-    res.json({ success: true, reply: completion.choices[0].message.content });
+    // Intelligent Fallback if API keys or rate limits occur
+    const lower = message.toLowerCase();
+    let smartReply = "Welcome to Auto Stitch! You can explore luxury designer pret, custom tailoring, and try on clothes instantly in our Virtual Try-On Studio.";
+    if (lower.includes('try on') || lower.includes('virtual') || lower.includes('vto')) {
+      smartReply = "You can use our Virtual Try-On feature on any product page or in our Full Studio (/try-on) to see how any outfit drapes on your photo with 100% privacy!";
+    } else if (lower.includes('custom') || lower.includes('tailor') || lower.includes('stitch')) {
+      smartReply = "Our Customization Studio allows you to submit measurements and special design requests. Registered boutiques will place competitive bids on your order!";
+    } else if (lower.includes('boutique') || lower.includes('designer') || lower.includes('brand')) {
+      smartReply = "We partner with premier fashion houses including Élan, Maria.B, Suffuse, Sana Safinaz, and many more. Visit the Boutiques tab to view their full collections.";
+    }
+
+    res.json({ success: true, reply: smartReply });
   } catch (error) {
     console.error('Groq Chatbot Error:', error);
     res.status(500).json({ success: false, message: 'I am having trouble stitching together an answer right now. Please try again later.' });
