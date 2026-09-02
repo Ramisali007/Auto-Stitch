@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+require('./User');
 
 const boutiqueSchema = new mongoose.Schema(
   {

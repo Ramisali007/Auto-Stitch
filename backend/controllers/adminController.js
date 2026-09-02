@@ -24,7 +24,12 @@ const getAdminStats = async (req, res) => {
 
     const productCount = await Product.countDocuments({ isActive: true });
     const boutiqueCount = await Boutique.countDocuments({ isApproved: true });
-    const pendingBoutiqueCount = await Boutique.countDocuments({ isApproved: false });
+    const pendingBoutiqueCount = await Boutique.countDocuments({
+      $or: [
+        { 'kyc.status': 'pending' },
+        { isApproved: false, 'kyc.status': { $ne: 'rejected' } }
+      ]
+    });
     
     // Revenue from completed or in-progress orders
     const orders = await Order.find({ status: { $nin: ['Cancelled', 'Refunded', 'cancelled', 'refunded'] } }).lean();
@@ -67,9 +72,14 @@ const getAdminStats = async (req, res) => {
 // @access  Private (Admin)
 const getPendingBoutiques = async (req, res) => {
   try {
-    const boutiques = await Boutique.find({ isApproved: false })
+    const boutiques = await Boutique.find({
+      $or: [
+        { 'kyc.status': 'pending' },
+        { isApproved: false, 'kyc.status': { $ne: 'rejected' } }
+      ]
+    })
       .populate('owner', 'name email phone')
-      .sort({ createdAt: -1 })
+      .sort({ 'kyc.submittedAt': -1, createdAt: -1 })
       .lean();
     
     res.json({ success: true, count: boutiques.length, boutiques });

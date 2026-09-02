@@ -354,19 +354,54 @@ export default function AdminDashboard() {
                   ) : (
                     pendingBoutiques.map(boutique => (
                       <div key={boutique._id} className="product-card-premium" style={{ padding: '1.2rem', background: '#fff', border: '1px solid #e5e5e5' }}>
-                        <div className="pc-info-main">
-                          <div style={{ display: 'flex', gap: '10px', marginBottom: '4px' }}>
-                            <span style={{ fontSize: '0.55rem', fontWeight: '800', background: '#000', color: '#fff', padding: '2px 8px', textTransform: 'uppercase' }}>Boutique</span>
-                            <span style={{ fontSize: '0.55rem', fontWeight: '700', color: '#999', textTransform: 'uppercase' }}>
-                              {new Date(boutique.createdAt).toLocaleDateString()}
+                        <div className="pc-info-main" style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', gap: '10px', marginBottom: '4px', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.55rem', fontWeight: '800', background: '#000', color: '#fff', padding: '2px 8px', textTransform: 'uppercase' }}>
+                              {boutique.kyc?.status === 'pending' ? 'KYC PENDING' : 'NEW BOUTIQUE'}
+                            </span>
+                            <span style={{ fontSize: '0.6rem', fontWeight: '600', color: '#64748b' }}>
+                              Submitted: {new Date(boutique.kyc?.submittedAt || boutique.createdAt).toLocaleDateString()}
                             </span>
                           </div>
-                          <h3 className="pc-name" style={{ fontSize: '1rem' }}>{boutique.name}</h3>
-                          <p className="pc-category">Owner: {boutique.owner?.name}</p>
+                          <h3 className="pc-name" style={{ fontSize: '1.05rem', margin: '4px 0 2px 0' }}>{boutique.name}</h3>
+                          <p className="pc-category" style={{ margin: '0 0 6px 0', fontSize: '0.8rem', color: '#475569' }}>
+                            Owner: <strong>{boutique.owner?.name || 'Boutique Partner'}</strong> {boutique.owner?.email ? `• ${boutique.owner.email}` : ''}
+                          </p>
+
+                          {/* KYC Data Indicators */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px', fontSize: '0.75rem' }}>
+                            {boutique.kyc?.cnic && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ color: '#64748b', fontWeight: 600 }}>CNIC:</span>
+                                <span style={{ fontFamily: 'monospace', fontWeight: 700, background: '#f1f5f9', padding: '1px 6px', borderRadius: '4px', color: '#0f172a' }}>
+                                  {boutique.kyc.cnic}
+                                </span>
+                              </div>
+                            )}
+                            {boutique.kyc?.businessCertificate && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ color: '#64748b', fontWeight: 600 }}>Certificate / NTN:</span>
+                                {boutique.kyc.businessCertificate.startsWith('http') ? (
+                                  <a href={boutique.kyc.businessCertificate} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>
+                                    View Certificate Document ↗
+                                  </a>
+                                ) : (
+                                  <span style={{ color: '#0f172a' }}>{boutique.kyc.businessCertificate}</span>
+                                )}
+                              </div>
+                            )}
+                            {boutique.kyc?.reviewNotes && (
+                              <div style={{ color: '#64748b', fontStyle: 'italic', fontSize: '0.72rem' }}>
+                                Note: {boutique.kyc.reviewNotes}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="pc-actions">
-                          <button className="btn-black-premium" style={{ padding: '8px 16px', fontSize: '0.65rem' }} onClick={() => handleApprove(boutique._id)}>Approve</button>
-                          <button className="pc-action-btn" title="Reject" onClick={() => handleReject(boutique._id)}><XCircle size={16} /></button>
+                        <div className="pc-actions" style={{ marginLeft: '1rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <button className="btn-black-premium" style={{ padding: '8px 16px', fontSize: '0.68rem', width: '100%' }} onClick={() => handleApprove(boutique._id)}>Approve</button>
+                          <button className="pc-action-btn" title="Reject Application" style={{ width: '100%', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.68rem' }} onClick={() => handleReject(boutique._id)}>
+                            <XCircle size={14} /> Reject
+                          </button>
                         </div>
                       </div>
                     ))

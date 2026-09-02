@@ -245,6 +245,16 @@ export default function Login({ onLogin }) {
                   <Link to="/forgot-password" name="forgot" className="forgot-pass-link">Forgot Password?</Link>
                 </div>
 
+                {import.meta.env.VITE_RECAPTCHA_SITE_KEY && (
+                  <div className="form-group-v2" style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                    <ReCAPTCHA
+                      sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                      onChange={(token) => setCaptchaToken(token)}
+                      onExpired={() => setCaptchaToken(null)}
+                    />
+                  </div>
+                )}
+
                 <button type="submit" className="login-submit-btn" disabled={loading}>
                   {loading ? 'Processing...' : 'Submit'}
                 </button>

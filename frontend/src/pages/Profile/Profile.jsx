@@ -73,7 +73,7 @@ export default function Profile({ user, onLogout, onUpdate }) {
         setKycForm({
           name: b.name || '',
           description: b.description || '',
-          cnic: b.kyc?.cnic || '',
+          cnic: b.kyc?.cnic ? String(b.kyc.cnic).replace(/\D/g, '').slice(0, 13) : '',
           businessCertificate: b.kyc?.businessCertificate || '',
           notes: b.kyc?.reviewNotes || ''
         });
@@ -81,15 +81,29 @@ export default function Profile({ user, onLogout, onUpdate }) {
     } catch (_) {}
   };
 
+  const handleCnicChange = (e) => {
+    // Allow only numeric digits and strictly enforce maximum 13 digits
+    const cleaned = e.target.value.replace(/\D/g, '').slice(0, 13);
+    setKycForm(prev => ({ ...prev, cnic: cleaned }));
+  };
+
   const handleKycSubmit = async (e) => {
     e?.preventDefault();
-    if (!kycForm.cnic) {
+    const cleanCnic = (kycForm.cnic || '').toString().replace(/\D/g, '');
+    if (!cleanCnic) {
       toast.error('Please enter your National CNIC number');
+      return;
+    }
+    if (cleanCnic.length !== 13) {
+      toast.error(`National CNIC must be exactly 13 numeric digits (currently ${cleanCnic.length})`);
       return;
     }
     setKycLoading(true);
     try {
-      const res = await axios.put(`${API_URL}/api/boutiques/kyc`, kycForm, { withCredentials: true });
+      const res = await axios.put(`${API_URL}/api/boutiques/kyc`, {
+        ...kycForm,
+        cnic: cleanCnic
+      }, { withCredentials: true });
       if (res.data.success) {
         setKycBoutique(res.data.boutique);
         toast.success(res.data.message || 'KYC documents submitted for verification');
@@ -322,15 +336,34 @@ export default function Profile({ user, onLogout, onUpdate }) {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">National CNIC Number (13 Digits) *</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label className="form-label" style={{ margin: 0 }}>National CNIC Number (13 Digits) *</label>
+                    <span style={{ 
+                      fontSize: '0.72rem', 
+                      fontWeight: 600, 
+                      color: kycForm.cnic?.length === 13 ? '#16a34a' : '#64748b',
+                      background: kycForm.cnic?.length === 13 ? '#f0fdf4' : '#f8fafc',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      border: `1px solid ${kycForm.cnic?.length === 13 ? '#bbf7d0' : '#e2e8f0'}`
+                    }}>
+                      {kycForm.cnic?.length || 0} / 13 digits
+                    </span>
+                  </div>
                   <input 
                     name="cnic" 
                     value={kycForm.cnic} 
-                    onChange={(e) => setKycForm({...kycForm, cnic: e.target.value})} 
+                    onChange={handleCnicChange}
+                    maxLength={13}
+                    inputMode="numeric"
+                    pattern="[0-9]{13}"
                     className="profile-input" 
-                    placeholder="35202-XXXXXXXX-X" 
+                    placeholder="Enter 13 numeric digits (e.g. 4200091047481)" 
                     required
                   />
+                  <small style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '5px', display: 'block' }}>
+                    Enter numbers only without hyphens or spaces. Exactly 13 digits.
+                  </small>
                 </div>
 
                 <div className="form-group">

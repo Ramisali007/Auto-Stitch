@@ -34,13 +34,13 @@ export default function AdminLogin({ onLogin }) {
     }
     setLoading(true);
     try {
-      const res = await axios.post(`${API_URL}/api/auth/login`, 
+      const res = await axios.post(`${API_URL}/api/auth/login`,
         { ...form, portal: 'admin', captchaToken: captchaToken || 'bypass-recaptcha' },
         { withCredentials: true }
       );
       const data = res.data;
       if (!data.success) throw new Error(data.message);
-      
+
       // Ensure only admins can login here
       if (data.user.role !== 'admin') {
         throw new Error('Access denied. Administrator privileges required.');
@@ -113,6 +113,16 @@ export default function AdminLogin({ onLogin }) {
                 </button>
               </div>
             </div>
+
+            {import.meta.env.VITE_RECAPTCHA_SITE_KEY && (
+              <div className="form-group-v2" style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                <ReCAPTCHA
+                  sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                  onChange={(token) => setCaptchaToken(token)}
+                  onExpired={() => setCaptchaToken(null)}
+                />
+              </div>
+            )}
 
             <button type="submit" className="login-submit-btn" disabled={loading}>
               {loading ? 'Verifying...' : 'Access Portal'}

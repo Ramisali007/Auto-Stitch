@@ -37,10 +37,10 @@ export default function BoutiqueLogin({ onLogin }) {
       const res = await axios.post(`${API_URL}/api/auth/login`, { ...form, portal: 'boutique', captchaToken: captchaToken || 'bypass-recaptcha' }, {
         withCredentials: true
       });
-      
+
       const { success, user, accessToken, message } = res.data;
       if (!success) throw new Error(message || 'Login failed');
-      
+
       if (user.role !== 'boutique_owner') {
         throw new Error('Access denied. Boutique owner credentials required.');
       }
@@ -65,7 +65,7 @@ export default function BoutiqueLogin({ onLogin }) {
               <Store size={40} strokeWidth={1.5} />
             </div>
           </div>
-          
+
           <h1 className="login-title-serif">Boutique Portal</h1>
           <p className="admin-subtitle">Partner business management</p>
 
@@ -122,6 +122,16 @@ export default function BoutiqueLogin({ onLogin }) {
                 </button>
               </div>
             </div>
+
+            {import.meta.env.VITE_RECAPTCHA_SITE_KEY && (
+              <div className="form-group-v2" style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                <ReCAPTCHA
+                  sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                  onChange={(token) => setCaptchaToken(token)}
+                  onExpired={() => setCaptchaToken(null)}
+                />
+              </div>
+            )}
 
             <button type="submit" className="login-submit-btn" disabled={loading}>
               {loading ? 'Authenticating...' : 'Enter Dashboard'}

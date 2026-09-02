@@ -111,6 +111,7 @@ class VtoQueueManager {
 
     try {
       let outputBuffer = null;
+      let engineUsed = 'local-sharp-compositor';
       // 1. Primary Cloud GPU: Replicate IDM-VTON (if configured & healthy)
       if (process.env.REPLICATE_API_TOKEN) {
         try {

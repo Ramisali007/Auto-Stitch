@@ -68,22 +68,31 @@ const submitBoutiqueKyc = async (req, res) => {
   try {
     const { cnic, businessCertificate, notes, name, description, address, contact } = req.body;
 
+    if (!cnic) {
+      return res.status(400).json({ success: false, message: 'National CNIC number is required' });
+    }
+
+    const cleanCnic = String(cnic).replace(/\D/g, '');
+    if (cleanCnic.length !== 13) {
+      return res.status(400).json({ success: false, message: 'National CNIC must be exactly 13 numeric digits' });
+    }
+
     let boutique = await Boutique.findOne({ owner: req.user._id });
     if (!boutique) {
       boutique = new Boutique({ owner: req.user._id, name: name || `${req.user.name}'s Atelier` });
     }
 
-    if (name) boutique.name = name;
-    if (description) boutique.description = description;
+    if (name) boutique.name = name.trim();
+    if (description !== undefined) boutique.description = description.trim();
     if (address) boutique.address = { ...boutique.address, ...address };
     if (contact) boutique.contact = { ...boutique.contact, ...contact };
 
     boutique.kyc = {
       status: 'pending',
-      cnic: cnic || boutique.kyc?.cnic,
-      businessCertificate: businessCertificate || boutique.kyc?.businessCertificate,
+      cnic: cleanCnic,
+      businessCertificate: (businessCertificate !== undefined ? businessCertificate : (boutique.kyc?.businessCertificate || '')).trim(),
       submittedAt: new Date(),
-      reviewNotes: notes || 'Submitted for administrator verification'
+      reviewNotes: (notes || 'Submitted for administrator verification').trim()
     };
 
     await boutique.save();
