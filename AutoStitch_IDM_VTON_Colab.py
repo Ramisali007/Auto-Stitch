@@ -5,9 +5,10 @@
 # ==============================================================================
 
 # ==============================================================================
-# CELL 1: Install Dependencies (Compatible Versions)
+# CELL 1: Install Dependencies & Remove JAX conflict
 # ==============================================================================
 """
+!pip uninstall -y jax jaxlib
 !pip install -q diffusers==0.25.1 transformers==4.36.2 accelerate==0.25.0 gradio==4.26.0
 !pip install -q einops omegaconf fvcore bitsandbytes torchvision onnxruntime-gpu
 """
