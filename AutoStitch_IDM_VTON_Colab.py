@@ -5,14 +5,14 @@
 # ==============================================================================
 
 # ==============================================================================
-# CELL 1: Install Dependencies (PyAV, Diffusers, HuggingFace Hub)
+# CELL 1: Install Dependencies (Pinned Peft & Accelerate Versions)
 # ==============================================================================
 """
 !pip uninstall -y jax jaxlib
 !pip install -q huggingface_hub==0.25.2
-!pip install -q diffusers==0.25.1 transformers==4.36.2 accelerate==0.25.0 gradio==4.26.0
+!pip install -q diffusers==0.25.1 transformers==4.36.2 accelerate==0.27.2 gradio==4.26.0
 !pip install -q einops omegaconf fvcore bitsandbytes torchvision onnxruntime-gpu
-!pip install -q av opencv-python scipy lpips peft
+!pip install -q av opencv-python scipy lpips peft==0.7.1
 """
 
 # ==============================================================================
