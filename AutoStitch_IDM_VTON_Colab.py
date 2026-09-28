@@ -10,7 +10,7 @@
 """
 !pip uninstall -y jax jaxlib
 !pip install -q huggingface_hub==0.25.2
-!pip install -q diffusers==0.25.1 transformers==4.36.2 accelerate==0.27.2 gradio==4.44.1
+!pip install -q diffusers==0.25.1 transformers==4.36.2 accelerate==0.27.2 gradio==4.44.1 uvicorn fastapi
 !pip install -q einops omegaconf fvcore bitsandbytes torchvision onnxruntime-gpu
 !pip install -q av opencv-python scipy lpips peft==0.7.1
 """
@@ -32,16 +32,37 @@ print('📥 Downloading DensePose & Human Parsing models...')
 !wget -q -O ckpt/humanparsing/parsing_atr.onnx https://huggingface.co/spaces/yisol/IDM-VTON/resolve/main/ckpt/humanparsing/parsing_atr.onnx
 !wget -q -O ckpt/humanparsing/parsing_lip.onnx https://huggingface.co/spaces/yisol/IDM-VTON/resolve/main/ckpt/humanparsing/parsing_lip.onnx
 !wget -q -O ckpt/openpose/ckpts/body_pose_model.pth https://huggingface.co/spaces/yisol/IDM-VTON/resolve/main/ckpt/openpose/ckpts/body_pose_model.pth
+
+# Clean app.py to prevent auto-launch on import
+!sed -i 's/image_blocks.launch.*//g' /content/IDM-VTON/gradio_demo/app.py
 print('✅ All Checkpoints Ready!')
 """
 
 # ==============================================================================
-# CELL 3: Mount /tryon_direct REST Route & Launch Server
+# CELL 3: Launch Pure FastAPI IDM-VTON Server
 # ==============================================================================
 """
-patch_code = '''
+server_code = '''
+import os, sys, io, base64, torch, uvicorn
+from PIL import Image
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import io, base64
+
+sys.path.append('/content/IDM-VTON')
+sys.path.append('/content/IDM-VTON/gradio_demo')
+
+# Import model inference function
+from gradio_demo.app import start_tryon
+
+app = FastAPI(title="Auto-Stitch IDM-VTON Engine")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class DirectTryOnRequest(BaseModel):
     human_image: str
@@ -49,50 +70,60 @@ class DirectTryOnRequest(BaseModel):
     category: str = "dresses"
     fit_style: str = "Tailored"
 
-def decode_b64(b64_str: str):
+def decode_b64(b64_str: str) -> Image.Image:
     if "," in b64_str:
         b64_str = b64_str.split(",")[1]
     data = base64.b64decode(b64_str)
     return Image.open(io.BytesIO(data)).convert("RGB")
 
-def encode_b64(img):
+def encode_b64(img: Image.Image) -> str:
     buf = io.BytesIO()
     img.save(buf, format="JPEG", quality=95)
     return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode("utf-8")
 
-@image_blocks.app.post("/tryon_direct")
-async def handle_direct_tryon(req: DirectTryOnRequest):
-    print(f"📥 Processing Try-On on GPU for {req.category}...")
+@app.get("/health")
+@app.get("/config")
+def health():
+    return {"status": "ok", "ready": True, "engine": "IDM-VTON Pure FastAPI", "device": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu"}
+
+@app.post("/api/tryon")
+@app.post("/tryon_direct")
+@app.post("/tryon")
+def handle_tryon(req: DirectTryOnRequest):
+    print(f"📥 Processing Try-On for Category: {req.category} on GPU...")
     try:
         human_pil = decode_b64(req.human_image)
         garment_pil = decode_b64(req.garment_image)
         dict_payload = {"background": human_pil, "layers": [], "composite": human_pil}
-        prompt = f"elegant high fashion model wearing luxury {req.category}, natural cloth folds, studio lighting"
+        prompt = f"elegant high-fashion model wearing luxury {req.category}, natural cloth folds, studio lighting"
         output_image, _ = start_tryon(dict_payload, garment_pil, prompt, True, False, 30, 42)
-        print("✅ Try-On Completed Successfully on GPU!")
+        print("✅ Try-On Generated Successfully on GPU!")
         return {"success": True, "result_image": encode_b64(output_image)}
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return {"success": False, "error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
-print('=' * 60)
-print('🚀 Auto Stitch IDM-VTON Cloud Engine Ready!')
-print(f'CUDA Device: {torch.cuda.get_device_name(0)}')
-print('=' * 60)
+if __name__ == "__main__":
+    try:
+        from gradio.tunneling import setup_tunnel
+        share_url = setup_tunnel("127.0.0.1", 8000, share_token=None)
+        print("=" * 60)
+        print("🚀 Auto Stitch IDM-VTON Cloud Server LIVE!")
+        print(f"🔥 Public API URL: {share_url}")
+        print("=" * 60)
+    except Exception as e:
+        print(f"Tunnel note: {e}")
 
-image_blocks.launch(share=True)
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
 '''
 
-# Patch gradio_demo/app.py
-with open('/content/IDM-VTON/gradio_demo/app.py', 'r') as f:
-    content = f.read()
+# Clean app.py launch calls
+!sed -i 's/image_blocks.launch.*//g' /content/IDM-VTON/gradio_demo/app.py
 
-content = content.replace('image_blocks.launch(share=True)', '').replace('image_blocks.launch()', '')
-
-with open('/content/IDM-VTON/gradio_demo/app.py', 'w') as f:
-    f.write(content.strip() + '\\n\\n' + patch_code.strip())
+with open('/content/IDM-VTON/fastapi_server.py', 'w') as f:
+    f.write(server_code.strip())
 
 %cd /content/IDM-VTON
-!python gradio_demo/app.py
+!python /content/IDM-VTON/fastapi_server.py
 """
