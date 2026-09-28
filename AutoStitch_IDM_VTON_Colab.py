@@ -5,14 +5,14 @@
 # ==============================================================================
 
 # ==============================================================================
-# CELL 1: Install All Required Dependencies (DensePose, Diffusers, PyAV)
+# CELL 1: Install Dependencies (PyAV, Diffusers, HuggingFace Hub)
 # ==============================================================================
 """
 !pip uninstall -y jax jaxlib
 !pip install -q huggingface_hub==0.25.2
 !pip install -q diffusers==0.25.1 transformers==4.36.2 accelerate==0.25.0 gradio==4.26.0
 !pip install -q einops omegaconf fvcore bitsandbytes torchvision onnxruntime-gpu
-!pip install -q av basicsr scipy opencv-python lpips peft
+!pip install -q av opencv-python scipy lpips peft
 """
 
 # ==============================================================================
