@@ -89,8 +89,8 @@ class IdmVtonAdapter extends VirtualTryOnEngine {
       body: JSON.stringify({
         human_image: humanBase64,
         garment_image: garmentBase64,
-        category,
-        fit_style: fitStyle,
+        category: safeCategory,
+        fit_style: safeFit,
       }),
       signal: AbortSignal.timeout(parseInt(process.env.VTO_TIMEOUT_SECONDS || '90', 10) * 1000),
     });
