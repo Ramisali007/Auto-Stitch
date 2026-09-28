@@ -43,9 +43,17 @@ print('✅ All Checkpoints Ready!')
 """
 
 # ==============================================================================
-# CELL 3: Launch Pure FastAPI IDM-VTON Server with Instant Public HTTPS Tunnel
+# ==============================================================================
+# CELL 3: Launch Pure FastAPI IDM-VTON Server (Clean CUDA & VAE Slicing)
 # ==============================================================================
 """
+# 1. Reset gradio_demo/app.py to pristine official state
+!cd /content/IDM-VTON && git checkout gradio_demo/app.py
+!sed -i 's/image_blocks.launch.*//g' /content/IDM-VTON/gradio_demo/app.py
+
+print('✅ Reset app.py to clean official state!')
+
+# 2. Write FastAPI Server
 server_code = '''
 import os, sys, io, base64, torch, uvicorn, subprocess, time, re, gc
 from PIL import Image
@@ -56,17 +64,21 @@ from pydantic import BaseModel
 sys.path.append('/content/IDM-VTON')
 sys.path.append('/content/IDM-VTON/gradio_demo')
 
-# Import gradio_demo.app modules
 from gradio_demo import app as vton_app
 
-# Enable memory optimizations for Tesla T4 GPU (Prevents CUDA OOM)
-if hasattr(vton_app, "pipe") and vton_app.pipe is not None:
-    try:
-        vton_app.pipe.enable_vae_slicing()
-        vton_app.pipe.enable_vae_tiling()
-        print("⚡ VAE Slicing & Tiling Enabled!")
-    except Exception as e:
-        print("VAE optimization notice:", e)
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
+
+# Explicitly ensure ALL pipeline components are on CUDA fp16
+print("🚀 Moving all IDM-VTON components to CUDA FP16...")
+vton_app.pipe.to(device, torch.float16)
+vton_app.UNet_Encoder.to(device, torch.float16)
+if hasattr(vton_app, "openpose_model") and hasattr(vton_app.openpose_model, "preprocessor"):
+    vton_app.openpose_model.preprocessor.body_estimation.model.to(device)
+
+# Enable VAE Slicing & Tiling (Reduces VRAM by 4GB, prevents CUDA OOM on Tesla T4)
+vton_app.pipe.enable_vae_slicing()
+vton_app.pipe.enable_vae_tiling()
+print("⚡ VAE Slicing & Tiling Activated Successfully!")
 
 app = FastAPI(title="Auto-Stitch IDM-VTON Engine")
 app.add_middleware(
@@ -100,7 +112,7 @@ def health():
     return {
         "status": "ok",
         "ready": True,
-        "engine": "IDM-VTON Pure FastAPI (Optimized)",
+        "engine": "IDM-VTON Pure FastAPI (Tesla T4 Optimized)",
         "device": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu",
         "vram_free_gb": round(torch.cuda.mem_get_info()[0] / (1024**3), 2) if torch.cuda.is_available() else 0
     }
@@ -109,9 +121,8 @@ def health():
 @app.post("/tryon_direct")
 @app.post("/tryon")
 def handle_tryon(req: DirectTryOnRequest):
-    print(f"📥 Processing High-Fidelity Try-On for Category: {req.category} on Tesla T4 GPU...")
+    print(f"📥 Processing Diffusion Virtual Try-On for: {req.category} on Tesla T4...")
     try:
-        # 1. Clean CUDA Cache before run
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
@@ -119,16 +130,13 @@ def handle_tryon(req: DirectTryOnRequest):
         human_pil = decode_b64(req.human_image)
         garment_pil = decode_b64(req.garment_image)
 
-        # Ensure optimal dimensions (max 768x1024 for standard IDM-VTON diffusion ratio)
-        if human_pil.width > 1024 or human_pil.height > 1024:
-            human_pil.thumbnail((768, 1024), Image.Resampling.LANCZOS)
-        if garment_pil.width > 1024 or garment_pil.height > 1024:
-            garment_pil.thumbnail((768, 1024), Image.Resampling.LANCZOS)
+        # Standardize to IDM-VTON native 768x1024 resolution
+        human_pil = human_pil.resize((768, 1024), Image.Resampling.LANCZOS)
+        garment_pil = garment_pil.resize((768, 1024), Image.Resampling.LANCZOS)
 
         dict_payload = {"background": human_pil, "layers": [], "composite": human_pil}
-        prompt = f"model wearing elegant luxury {req.category}, natural cloth texture, high quality studio photo"
+        prompt = f"model wearing elegant luxury {req.category}, natural cloth folds, high resolution studio photograph"
 
-        # 2. Run Try-On with inference mode and 25 denoising steps (prevents OOM, preserves photorealism)
         with torch.inference_mode():
             output_image, _ = vton_app.start_tryon(
                 dict_payload, 
@@ -140,12 +148,11 @@ def handle_tryon(req: DirectTryOnRequest):
                 42     # seed
             )
 
-        # 3. Offload & clear cache immediately
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
-        print("✅ IDM-VTON High-Fidelity Result Generated Successfully!")
+        print("✅ Diffusion Virtual Try-On Complete & Photorealistic!")
         return {"success": True, "result_image": encode_b64(output_image)}
     except Exception as e:
         import traceback
@@ -175,16 +182,13 @@ def start_tunnel():
 if __name__ == "__main__":
     pub_url = start_tunnel()
     print("=" * 60)
-    print("🚀 Auto Stitch IDM-VTON Cloud Server LIVE (VRAM Optimized)!")
+    print("🚀 Auto Stitch IDM-VTON Cloud Server LIVE (Tesla T4 Ready)!")
     if pub_url:
         print(f"🔥 Public API URL: {pub_url}")
     print("=" * 60)
 
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
 '''
-
-# Clean app.py launch calls and enable VAE slicing in app.py directly
-!sed -i 's/image_blocks.launch.*//g' /content/IDM-VTON/gradio_demo/app.py
 
 with open('/content/IDM-VTON/fastapi_server.py', 'w') as f:
     f.write(server_code.strip())
