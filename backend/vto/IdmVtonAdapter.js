@@ -54,7 +54,35 @@ class IdmVtonAdapter extends VirtualTryOnEngine {
     if (rawFit.includes('relax')) safeFit = 'Relaxed';
     else if (rawFit.includes('slim')) safeFit = 'Slim';
 
-    // Strategy 1: Official @gradio/client (100% Reliable for Gradio 4/5)
+    // Strategy 1: Direct REST /api/tryon (Fast, Robust, Zero Schema Overhead)
+    const humanBase64 = `data:image/jpeg;base64,${personBuffer.toString('base64')}`;
+    const garmentBase64 = `data:image/jpeg;base64,${garmentBuffer.toString('base64')}`;
+
+    try {
+      const response = await fetch(`${this.serviceUrl}/api/tryon`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          human_image: humanBase64,
+          garment_image: garmentBase64,
+          category: safeCategory,
+          fit_style: safeFit,
+        }),
+        signal: AbortSignal.timeout(parseInt(process.env.VTO_TIMEOUT_SECONDS || '120', 10) * 1000),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const resultImg = data.result_image || data.image;
+        if (resultImg) {
+          return await this._parseImageOutput(resultImg);
+        }
+      }
+    } catch (err) {
+      console.warn('[IdmVtonAdapter] Direct /api/tryon attempt failed:', err.message, 'Trying Gradio client fallback...');
+    }
+
+    // Strategy 2: Official @gradio/client with /tryon
     if (GradioClient) {
       try {
         const client = await this._getClient();
@@ -62,11 +90,14 @@ class IdmVtonAdapter extends VirtualTryOnEngine {
           const blobPerson = new Blob([personBuffer], { type: 'image/jpeg' });
           const blobGarment = new Blob([garmentBuffer], { type: 'image/jpeg' });
 
-          const res = await client.predict('/virtual_tryon_inference', [
-            blobPerson,
+          const res = await client.predict('/tryon', [
+            { background: blobPerson, layers: [], composite: blobPerson },
             blobGarment,
-            safeCategory,
-            safeFit,
+            `luxury ${safeCategory}`,
+            true,
+            false,
+            30,
+            42,
           ]);
 
           if (res && res.data) {
@@ -75,31 +106,11 @@ class IdmVtonAdapter extends VirtualTryOnEngine {
           }
         }
       } catch (clientErr) {
-        console.warn('[IdmVtonAdapter] Gradio client predict warning:', clientErr.message, 'Trying direct fallback...');
+        console.warn('[IdmVtonAdapter] Gradio client predict warning:', clientErr.message);
       }
     }
 
-    // Strategy 2: Direct REST /api/tryon (FastAPI Colab fallback)
-    const humanBase64 = `data:image/jpeg;base64,${personBuffer.toString('base64')}`;
-    const garmentBase64 = `data:image/jpeg;base64,${garmentBuffer.toString('base64')}`;
-
-    const response = await fetch(`${this.serviceUrl}/api/tryon`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        human_image: humanBase64,
-        garment_image: garmentBase64,
-        category: safeCategory,
-        fit_style: safeFit,
-      }),
-      signal: AbortSignal.timeout(parseInt(process.env.VTO_TIMEOUT_SECONDS || '90', 10) * 1000),
-    });
-
-    if (!response.ok) throw new Error(`VTON Server returned status ${response.status}`);
-    const data = await response.json();
-    const resultImg = data.result_image || data.image;
-    if (!resultImg) throw new Error('Empty result from VTON server');
-    return await this._parseImageOutput(resultImg);
+    throw new Error('All VTON strategies exhausted');
   }
 
   async _parseImageOutput(output) {

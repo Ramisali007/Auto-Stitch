@@ -16,7 +16,7 @@
 """
 
 # ==============================================================================
-# CELL 2: Clone IDM-VTON, Download Checkpoints & Enable Public Sharing
+# CELL 2: Clone IDM-VTON & Download Required AI Checkpoints
 # ==============================================================================
 """
 import os
@@ -32,24 +32,62 @@ print('📥 Downloading DensePose & Human Parsing models...')
 !wget -q -O ckpt/humanparsing/parsing_atr.onnx https://huggingface.co/spaces/yisol/IDM-VTON/resolve/main/ckpt/humanparsing/parsing_atr.onnx
 !wget -q -O ckpt/humanparsing/parsing_lip.onnx https://huggingface.co/spaces/yisol/IDM-VTON/resolve/main/ckpt/humanparsing/parsing_lip.onnx
 !wget -q -O ckpt/openpose/ckpts/body_pose_model.pth https://huggingface.co/spaces/yisol/IDM-VTON/resolve/main/ckpt/openpose/ckpts/body_pose_model.pth
-
-# Enable share=True in gradio_demo/app.py to generate live public tunnel
-!sed -i 's/image_blocks.launch()/image_blocks.launch(share=True)/g' /content/IDM-VTON/gradio_demo/app.py
-print('✅ All Checkpoints Ready & Public Tunnel Enabled!')
+print('✅ All Checkpoints Ready!')
 """
 
 # ==============================================================================
-# CELL 3: Launch IDM-VTON Server
+# CELL 3: Launch IDM-VTON Direct API & GPU Server
 # ==============================================================================
 """
-import torch
+import os, sys, io, base64, torch
+from PIL import Image
+from pydantic import BaseModel
+
+%cd /content/IDM-VTON
+sys.path.append('/content/IDM-VTON')
+sys.path.append('/content/IDM-VTON/gradio_demo')
+
+# Import the initialized pipeline and inference engine
+from gradio_demo.app import image_blocks, start_tryon
+
+class DirectTryOnRequest(BaseModel):
+    human_image: str
+    garment_image: str
+    category: str = 'dresses'
+    fit_style: str = 'Tailored'
+
+def decode_b64(b64_str: str) -> Image.Image:
+    if ',' in b64_str:
+        b64_str = b64_str.split(',')[1]
+    data = base64.b64decode(b64_str)
+    return Image.open(io.BytesIO(data)).convert('RGB')
+
+def encode_b64(img: Image.Image) -> str:
+    buf = io.BytesIO()
+    img.save(buf, format='JPEG', quality=95)
+    return 'data:image/jpeg;base64,' + base64.b64encode(buf.getvalue()).decode('utf-8')
+
+# Register direct REST endpoint for AutoStitch
+@image_blocks.app.post('/api/tryon')
+async def handle_direct_tryon(req: DirectTryOnRequest):
+    print(f'📥 Processing Try-On for Category: {req.category} on GPU...')
+    try:
+        human_pil = decode_b64(req.human_image)
+        garment_pil = decode_b64(req.garment_image)
+        dict_payload = {'background': human_pil, 'layers': [], 'composite': human_pil}
+        prompt = f'elegant high fashion model wearing luxury {req.category}, natural cloth folds, studio lighting'
+        output_image, _ = start_tryon(dict_payload, garment_pil, prompt, True, False, 30, 42)
+        print('✅ Try-On Completed Successfully on GPU!')
+        return {'success': True, 'result_image': encode_b64(output_image)}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {'success': False, 'error': str(e)}
+
 print('=' * 60)
-print('🚀 Auto Stitch IDM-VTON Cloud Server Launching...')
-print(f'CUDA Available: {torch.cuda.is_available()}')
-if torch.cuda.is_available():
-    print(f'GPU Device: {torch.cuda.get_device_name(0)}')
+print('🚀 Auto Stitch IDM-VTON Cloud Engine Ready!')
+print(f'CUDA Device: {torch.cuda.get_device_name(0)}')
 print('=' * 60)
 
-# Run the app
-!python gradio_demo/app.py
+image_blocks.launch(share=True)
 """
