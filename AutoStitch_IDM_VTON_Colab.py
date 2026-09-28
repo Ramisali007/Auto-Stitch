@@ -67,7 +67,8 @@ def encode_b64(img: Image.Image) -> str:
     img.save(buf, format='JPEG', quality=95)
     return 'data:image/jpeg;base64,' + base64.b64encode(buf.getvalue()).decode('utf-8')
 
-# Attach direct REST endpoint
+# Attach unintercepted direct REST endpoints
+@image_blocks.app.post('/tryon_direct')
 @image_blocks.app.post('/api/tryon')
 async def handle_direct_tryon(req: DirectTryOnRequest):
     print(f'📥 Processing Try-On for Category: {req.category} on GPU...')

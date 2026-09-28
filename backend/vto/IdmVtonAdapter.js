@@ -39,7 +39,8 @@ class IdmVtonAdapter extends VirtualTryOnEngine {
   }
 
   async generate(personBuffer, garmentBuffer, options = {}) {
-    if (!this.serviceUrl) throw new Error('VTON service URL not configured');
+    const serviceUrl = (this.serviceUrl || process.env.VTON_SERVICE_URL || process.env.COLAB_TRYON_URL || '').trim().replace(/\/+$/, '');
+    if (!serviceUrl) throw new Error('VTON service URL not configured');
 
     const rawCategory = (options.category || 'dresses').toLowerCase();
     let safeCategory = 'dresses';
@@ -54,32 +55,37 @@ class IdmVtonAdapter extends VirtualTryOnEngine {
     if (rawFit.includes('relax')) safeFit = 'Relaxed';
     else if (rawFit.includes('slim')) safeFit = 'Slim';
 
-    // Strategy 1: Direct REST /api/tryon (Fast, Robust, Zero Schema Overhead)
+    // Strategy 1: Direct Custom REST endpoint (/tryon_direct)
     const humanBase64 = `data:image/jpeg;base64,${personBuffer.toString('base64')}`;
     const garmentBase64 = `data:image/jpeg;base64,${garmentBuffer.toString('base64')}`;
 
-    try {
-      const response = await fetch(`${this.serviceUrl}/api/tryon`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          human_image: humanBase64,
-          garment_image: garmentBase64,
-          category: safeCategory,
-          fit_style: safeFit,
-        }),
-        signal: AbortSignal.timeout(parseInt(process.env.VTO_TIMEOUT_SECONDS || '120', 10) * 1000),
-      });
+    for (const endpoint of ['/tryon_direct', '/api/tryon']) {
+      try {
+        const response = await fetch(`${serviceUrl}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            human_image: humanBase64,
+            garment_image: garmentBase64,
+            category: safeCategory,
+            fit_style: safeFit,
+          }),
+          signal: AbortSignal.timeout(parseInt(process.env.VTO_TIMEOUT_SECONDS || '120', 10) * 1000),
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        const resultImg = data.result_image || data.image;
-        if (resultImg) {
-          return await this._parseImageOutput(resultImg);
+        if (response.ok) {
+          const data = await response.json();
+          const resultImg = data.result_image || data.image;
+          if (resultImg) {
+            return await this._parseImageOutput(resultImg);
+          }
+        } else {
+          const errText = await response.text();
+          console.warn(`[IdmVtonAdapter] ${endpoint} returned status ${response.status}: ${errText.slice(0, 120)}`);
         }
+      } catch (err) {
+        console.warn(`[IdmVtonAdapter] ${endpoint} attempt failed:`, err.message);
       }
-    } catch (err) {
-      console.warn('[IdmVtonAdapter] Direct /api/tryon attempt failed:', err.message, 'Trying Gradio client fallback...');
     }
 
     // Strategy 2: Official @gradio/client with /tryon
