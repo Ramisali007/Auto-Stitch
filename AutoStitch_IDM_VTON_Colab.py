@@ -10,7 +10,7 @@
 """
 !pip uninstall -y jax jaxlib
 !pip install -q huggingface_hub==0.25.2
-!pip install -q diffusers==0.25.1 transformers==4.36.2 accelerate==0.27.2 gradio==4.44.1 uvicorn fastapi
+!pip install -q diffusers==0.25.1 transformers==4.36.2 accelerate==0.27.2 gradio==4.44.1 uvicorn fastapi pyngrok
 !pip install -q einops omegaconf fvcore bitsandbytes torchvision onnxruntime-gpu
 !pip install -q av opencv-python scipy lpips peft==0.7.1
 """
@@ -105,15 +105,22 @@ def handle_tryon(req: DirectTryOnRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
+    share_url = None
     try:
-        from gradio.tunneling import setup_tunnel
+        from gradio.networking import setup_tunnel
         share_url = setup_tunnel("127.0.0.1", 8000, share_token=None)
-        print("=" * 60)
-        print("🚀 Auto Stitch IDM-VTON Cloud Server LIVE!")
+    except Exception as e1:
+        try:
+            from pyngrok import ngrok
+            share_url = ngrok.connect(8000).public_url
+        except Exception as e2:
+            print(f"Tunnel setup note: {e1} | {e2}")
+
+    print("=" * 60)
+    print("🚀 Auto Stitch IDM-VTON Cloud Server LIVE!")
+    if share_url:
         print(f"🔥 Public API URL: {share_url}")
-        print("=" * 60)
-    except Exception as e:
-        print(f"Tunnel note: {e}")
+    print("=" * 60)
 
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
 '''
