@@ -1,48 +1,49 @@
 # ==============================================================================
-# Auto Stitch — Google Colab IDM-VTON Photorealistic Virtual Try-On Server
+# Auto Stitch — IDM-VTON Photorealistic Virtual Try-On Server
 # ==============================================================================
-# 100% Free Cloud GPU (Google Colab T4 / A100)
-# Delivers state-of-the-art results matching commercial APIs like Fashn.ai
-# ==============================================================================
-
-# ==============================================================================
-# STEP 1: Set Runtime to GPU
-# In Google Colab menu: Runtime -> Change runtime type -> Select "T4 GPU" -> Save
+# Run the official IDM-VTON on Google Colab (100% Free T4 GPU)
 # ==============================================================================
 
 # ==============================================================================
-# CELL 1: Install Core Dependencies
+# CELL 1: Install Dependencies (Compatible Versions)
 # ==============================================================================
 """
-!pip install -q diffusers==0.27.2 transformers==4.38.2 accelerate==0.27.2 gradio==4.26.0 torchvision einops omegaconf fvcore
-!pip install -q bitsandbytes onnxruntime-gpu httpx
-!pip install -q git+https://github.com/huggingface/accelerate.git
+!pip install -q diffusers==0.25.1 transformers==4.36.2 accelerate==0.25.0 gradio==4.26.0
+!pip install -q einops omegaconf fvcore bitsandbytes torchvision onnxruntime-gpu
 """
 
 # ==============================================================================
-# CELL 2: Clone Official IDM-VTON Repository & Download Weights
+# CELL 2: Clone IDM-VTON & Download Required AI Checkpoints
 # ==============================================================================
 """
 import os
-if not os.path.exists('IDM-VTON'):
-    !git clone https://github.com/yisol/IDM-VTON.git
-%cd IDM-VTON
-!pip install -q -r requirements.txt
+if not os.path.exists('/content/IDM-VTON'):
+    !git clone https://github.com/yisol/IDM-VTON.git /content/IDM-VTON
+%cd /content/IDM-VTON
+
+# Create checkpoint directories
+!mkdir -p ckpt/densepose ckpt/humanparsing ckpt/openpose/ckpts
+
+print('📥 Downloading DensePose & Human Parsing models...')
+!wget -q -O ckpt/densepose/model_final_162be9.pkl https://huggingface.co/spaces/yisol/IDM-VTON/resolve/main/ckpt/densepose/model_final_162be9.pkl
+!wget -q -O ckpt/humanparsing/parsing_atr.onnx https://huggingface.co/spaces/yisol/IDM-VTON/resolve/main/ckpt/humanparsing/parsing_atr.onnx
+!wget -q -O ckpt/humanparsing/parsing_lip.onnx https://huggingface.co/spaces/yisol/IDM-VTON/resolve/main/ckpt/humanparsing/parsing_lip.onnx
+!wget -q -O ckpt/openpose/ckpts/body_pose_model.pth https://huggingface.co/spaces/yisol/IDM-VTON/resolve/main/ckpt/openpose/ckpts/body_pose_model.pth
+print('✅ All Checkpoints Ready!')
 """
 
 # ==============================================================================
-# CELL 3: Launch IDM-VTON GPU Server with Public Live URL
+# CELL 3: Launch IDM-VTON Server with Public Tunnel
 # ==============================================================================
 """
 import torch
-print("=" * 60)
-print("🚀 Auto Stitch IDM-VTON Cloud Engine Initializing...")
-print(f"CUDA Available: {torch.cuda.is_available()}")
+print('=' * 60)
+print('🚀 Auto Stitch IDM-VTON Cloud Server Launching...')
+print(f'CUDA Available: {torch.cuda.is_available()}')
 if torch.cuda.is_available():
-    print(f"GPU Model: {torch.cuda.get_device_name(0)}")
-print("=" * 60)
+    print(f'GPU Device: {torch.cuda.get_device_name(0)}')
+print('=' * 60)
 
-# Run the official IDM-VTON server with public sharing enabled
-# This outputs a public link: https://xxxx.gradio.live
-!python app.py --share
+# Run gradio_demo/app.py with public sharing
+!python gradio_demo/app.py --share
 """
