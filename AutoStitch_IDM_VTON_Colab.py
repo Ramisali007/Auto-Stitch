@@ -36,18 +36,18 @@ print('✅ All Checkpoints Ready!')
 """
 
 # ==============================================================================
-# CELL 3: Launch IDM-VTON Direct API & GPU Server
+# CELL 3: Build & Launch Clean Dedicated AI Server
 # ==============================================================================
 """
+server_code = '''
 import os, sys, io, base64, torch
 from PIL import Image
 from pydantic import BaseModel
 
-%cd /content/IDM-VTON
 sys.path.append('/content/IDM-VTON')
 sys.path.append('/content/IDM-VTON/gradio_demo')
 
-# Import the initialized pipeline and inference engine
+# Load IDM-VTON pipeline components
 from gradio_demo.app import image_blocks, start_tryon
 
 class DirectTryOnRequest(BaseModel):
@@ -67,7 +67,7 @@ def encode_b64(img: Image.Image) -> str:
     img.save(buf, format='JPEG', quality=95)
     return 'data:image/jpeg;base64,' + base64.b64encode(buf.getvalue()).decode('utf-8')
 
-# Register direct REST endpoint for AutoStitch
+# Attach direct REST endpoint
 @image_blocks.app.post('/api/tryon')
 async def handle_direct_tryon(req: DirectTryOnRequest):
     print(f'📥 Processing Try-On for Category: {req.category} on GPU...')
@@ -90,4 +90,11 @@ print(f'CUDA Device: {torch.cuda.get_device_name(0)}')
 print('=' * 60)
 
 image_blocks.launch(share=True)
+'''
+
+with open('/content/IDM-VTON/server_app.py', 'w') as f:
+    f.write(server_code.strip())
+
+%cd /content/IDM-VTON
+!python /content/IDM-VTON/server_app.py
 """
