@@ -5,14 +5,18 @@
 # ==============================================================================
 
 # ==============================================================================
-# CELL 1: Install Dependencies
+# CELL 1: Install Dependencies & Cloudflare Tunnel
 # ==============================================================================
 """
 !pip uninstall -y jax jaxlib
 !pip install -q huggingface_hub==0.25.2
-!pip install -q diffusers==0.25.1 transformers==4.36.2 accelerate==0.27.2 gradio==4.44.1 uvicorn fastapi pyngrok
+!pip install -q diffusers==0.25.1 transformers==4.36.2 accelerate==0.27.2 gradio==4.44.1 uvicorn fastapi
 !pip install -q einops omegaconf fvcore bitsandbytes torchvision onnxruntime-gpu
 !pip install -q av opencv-python scipy lpips peft==0.7.1
+
+# Download Cloudflare tunnel binary (100% Free, zero-signup instant public HTTPS)
+!wget -q -nc https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -O /usr/local/bin/cloudflared
+!chmod +x /usr/local/bin/cloudflared
 """
 
 # ==============================================================================
@@ -39,11 +43,11 @@ print('✅ All Checkpoints Ready!')
 """
 
 # ==============================================================================
-# CELL 3: Launch Pure FastAPI IDM-VTON Server
+# CELL 3: Launch Pure FastAPI IDM-VTON Server with Instant Public HTTPS Tunnel
 # ==============================================================================
 """
 server_code = '''
-import os, sys, io, base64, torch, uvicorn
+import os, sys, io, base64, torch, uvicorn, subprocess, time, re
 from PIL import Image
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -104,22 +108,31 @@ def handle_tryon(req: DirectTryOnRequest):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-if __name__ == "__main__":
-    share_url = None
+def start_tunnel():
+    # Method 1: Cloudflare Tunnel (100% Free, instant HTTPS)
+    try:
+        cf = subprocess.Popen(["/usr/local/bin/cloudflared", "tunnel", "--url", "http://127.0.0.1:8000"], stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, text=True)
+        for _ in range(25):
+            line = cf.stderr.readline()
+            match = re.search(r'https://[a-zA-Z0-9-]+\\.trycloudflare\\.com', line)
+            if match:
+                return match.group(0)
+            time.sleep(0.2)
+    except Exception:
+        pass
+    # Method 2: Gradio live tunnel
     try:
         from gradio.networking import setup_tunnel
-        share_url = setup_tunnel("127.0.0.1", 8000, share_token=None)
-    except Exception as e1:
-        try:
-            from pyngrok import ngrok
-            share_url = ngrok.connect(8000).public_url
-        except Exception as e2:
-            print(f"Tunnel setup note: {e1} | {e2}")
+        return setup_tunnel("127.0.0.1", 8000, "", None)
+    except Exception:
+        return None
 
+if __name__ == "__main__":
+    pub_url = start_tunnel()
     print("=" * 60)
     print("🚀 Auto Stitch IDM-VTON Cloud Server LIVE!")
-    if share_url:
-        print(f"🔥 Public API URL: {share_url}")
+    if pub_url:
+        print(f"🔥 Public API URL: {pub_url}")
     print("=" * 60)
 
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
