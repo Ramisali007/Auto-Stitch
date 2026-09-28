@@ -36,54 +36,45 @@ print('✅ All Checkpoints Ready!')
 """
 
 # ==============================================================================
-# CELL 3: Build & Launch Clean Dedicated AI Server
+# CELL 3: Mount /tryon_direct REST Route & Launch Server
 # ==============================================================================
 """
-server_code = '''
-import os, sys, io, base64, torch
-from PIL import Image
+patch_code = '''
 from pydantic import BaseModel
-
-sys.path.append('/content/IDM-VTON')
-sys.path.append('/content/IDM-VTON/gradio_demo')
-
-# Load IDM-VTON pipeline components
-from gradio_demo.app import image_blocks, start_tryon
+import io, base64
 
 class DirectTryOnRequest(BaseModel):
     human_image: str
     garment_image: str
-    category: str = 'dresses'
-    fit_style: str = 'Tailored'
+    category: str = "dresses"
+    fit_style: str = "Tailored"
 
-def decode_b64(b64_str: str) -> Image.Image:
-    if ',' in b64_str:
-        b64_str = b64_str.split(',')[1]
+def decode_b64(b64_str: str):
+    if "," in b64_str:
+        b64_str = b64_str.split(",")[1]
     data = base64.b64decode(b64_str)
-    return Image.open(io.BytesIO(data)).convert('RGB')
+    return Image.open(io.BytesIO(data)).convert("RGB")
 
-def encode_b64(img: Image.Image) -> str:
+def encode_b64(img):
     buf = io.BytesIO()
-    img.save(buf, format='JPEG', quality=95)
-    return 'data:image/jpeg;base64,' + base64.b64encode(buf.getvalue()).decode('utf-8')
+    img.save(buf, format="JPEG", quality=95)
+    return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode("utf-8")
 
-# Attach unintercepted direct REST endpoints
-@image_blocks.app.post('/tryon_direct')
-@image_blocks.app.post('/api/tryon')
+@image_blocks.app.post("/tryon_direct")
 async def handle_direct_tryon(req: DirectTryOnRequest):
-    print(f'📥 Processing Try-On for Category: {req.category} on GPU...')
+    print(f"📥 Processing Try-On on GPU for {req.category}...")
     try:
         human_pil = decode_b64(req.human_image)
         garment_pil = decode_b64(req.garment_image)
-        dict_payload = {'background': human_pil, 'layers': [], 'composite': human_pil}
-        prompt = f'elegant high fashion model wearing luxury {req.category}, natural cloth folds, studio lighting'
+        dict_payload = {"background": human_pil, "layers": [], "composite": human_pil}
+        prompt = f"elegant high fashion model wearing luxury {req.category}, natural cloth folds, studio lighting"
         output_image, _ = start_tryon(dict_payload, garment_pil, prompt, True, False, 30, 42)
-        print('✅ Try-On Completed Successfully on GPU!')
-        return {'success': True, 'result_image': encode_b64(output_image)}
+        print("✅ Try-On Completed Successfully on GPU!")
+        return {"success": True, "result_image": encode_b64(output_image)}
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return {'success': False, 'error': str(e)}
+        return {"success": False, "error": str(e)}
 
 print('=' * 60)
 print('🚀 Auto Stitch IDM-VTON Cloud Engine Ready!')
@@ -93,9 +84,15 @@ print('=' * 60)
 image_blocks.launch(share=True)
 '''
 
-with open('/content/IDM-VTON/server_app.py', 'w') as f:
-    f.write(server_code.strip())
+# Patch gradio_demo/app.py
+with open('/content/IDM-VTON/gradio_demo/app.py', 'r') as f:
+    content = f.read()
+
+content = content.replace('image_blocks.launch(share=True)', '').replace('image_blocks.launch()', '')
+
+with open('/content/IDM-VTON/gradio_demo/app.py', 'w') as f:
+    f.write(content.strip() + '\\n\\n' + patch_code.strip())
 
 %cd /content/IDM-VTON
-!python /content/IDM-VTON/server_app.py
+!python gradio_demo/app.py
 """
