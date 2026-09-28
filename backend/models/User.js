@@ -36,6 +36,8 @@ const userSchema = new mongoose.Schema(
       email: { type: Boolean, default: true },
       inApp: { type: Boolean, default: true },
       push: { type: Boolean, default: false },
+      orderUpdates: { type: Boolean, default: true },
+      promotions: { type: Boolean, default: false },
     },
     resetPasswordToken: String,
     resetPasswordExpire: Date,

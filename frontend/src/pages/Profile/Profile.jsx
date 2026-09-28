@@ -55,6 +55,8 @@ export default function Profile({ user, onLogout, onUpdate }) {
         postalCode: user.address?.postalCode || '',
         emailNotif: user.notifications?.email ?? true,
         pushNotif: user.notifications?.push ?? false,
+        orderUpdates: user.notifications?.orderUpdates ?? true,
+        promotions: user.notifications?.promotions ?? false,
       }));
       setTwoFactorEnabled(!!user.twoFactorEnabled);
 
@@ -141,7 +143,12 @@ export default function Profile({ user, onLogout, onUpdate }) {
           email: form.email,
           phone: form.phone,
           address: { street: form.street, city: form.city, province: form.province, postalCode: form.postalCode },
-          notifications: { email: form.emailNotif, push: form.pushNotif }
+          notifications: {
+            email: form.emailNotif,
+            push: form.pushNotif,
+            orderUpdates: form.orderUpdates,
+            promotions: form.promotions
+          }
         };
 
         const res = await axios.put(`${API_URL}/api/auth/profile`, 
@@ -151,7 +158,9 @@ export default function Profile({ user, onLogout, onUpdate }) {
         const data = res.data;
         if (!data.success) throw new Error(data.message);
 
-        setSuccess('Profile updated successfully!');
+        const successMsg = activeTab === 'notifications' ? 'Notification preferences saved successfully!' : 'Profile updated successfully!';
+        setSuccess(successMsg);
+        toast.success(successMsg);
         localStorage.setItem('user', JSON.stringify(data.user));
         if (onUpdate) onUpdate(data.user);
       }

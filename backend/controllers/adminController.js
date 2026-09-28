@@ -30,7 +30,7 @@ const getAdminStats = async (req, res) => {
         { isApproved: false, 'kyc.status': { $ne: 'rejected' } }
       ]
     });
-    
+
     // Revenue from completed or in-progress orders
     const orders = await Order.find({ status: { $nin: ['Cancelled', 'Refunded', 'cancelled', 'refunded'] } }).lean();
     const totalRevenue = orders.reduce((acc, order) => acc + (order.total || 0), 0);
@@ -43,6 +43,9 @@ const getAdminStats = async (req, res) => {
 
     const SupportTicket = require('../models/SupportTicket');
     const openTicketsCount = await SupportTicket.countDocuments({ status: 'open' });
+
+    const Subscriber = require('../models/Subscriber');
+    const totalSubscribers = await Subscriber.countDocuments({ isActive: true });
 
     res.json({
       success: true,
@@ -57,6 +60,7 @@ const getAdminStats = async (req, res) => {
         avgOrderValue,
         activeBidsCount,
         openTicketsCount,
+        totalSubscribers,
         conversionRate: '4.2%',
         growthRate: '+18.4%'
       }
@@ -81,7 +85,7 @@ const getPendingBoutiques = async (req, res) => {
       .populate('owner', 'name email phone')
       .sort({ 'kyc.submittedAt': -1, createdAt: -1 })
       .lean();
-    
+
     res.json({ success: true, count: boutiques.length, boutiques });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
@@ -94,7 +98,7 @@ const getPendingBoutiques = async (req, res) => {
 const approveBoutique = async (req, res) => {
   try {
     const boutique = await Boutique.findById(req.params.id).populate('owner', 'name email');
-    
+
     if (!boutique) {
       return res.status(404).json({ success: false, message: 'Boutique not found' });
     }
@@ -102,9 +106,9 @@ const approveBoutique = async (req, res) => {
     boutique.isApproved = true;
     boutique.kyc.status = 'verified';
     boutique.kyc.reviewedAt = new Date();
-    
+
     await boutique.save();
-    
+
     if (boutique.owner && boutique.owner.email) {
       try {
         await sendEmail({
@@ -130,7 +134,7 @@ const rejectBoutique = async (req, res) => {
   try {
     const { reason } = req.body;
     const boutique = await Boutique.findById(req.params.id).populate('owner', 'name email');
-    
+
     if (!boutique) {
       return res.status(404).json({ success: false, message: 'Boutique not found' });
     }
@@ -139,9 +143,9 @@ const rejectBoutique = async (req, res) => {
     boutique.kyc.status = 'rejected';
     boutique.kyc.reviewNotes = reason || 'Does not meet requirements';
     boutique.kyc.reviewedAt = new Date();
-    
+
     await boutique.save();
-    
+
     if (boutique.owner && boutique.owner.email) {
       try {
         await sendEmail({
@@ -169,13 +173,13 @@ const getAllUsers = async (req, res) => {
     const owners = await BoutiqueOwner.find({}).select('-password -twoFactorSecret').lean();
     const admins = await Admin.find({}).select('-password -twoFactorSecret').lean();
     const legacyUsers = await User.find({}).select('-password -twoFactorSecret').lean();
-    
+
     // Use a Map to deduplicate by email
     const userMap = new Map();
 
     // Add legacy users first (lowest priority)
     legacyUsers.forEach(u => userMap.set(u.email.toLowerCase(), { ...u, source: 'users' }));
-    
+
     // Overwrite with specialized data (higher priority)
     customers.forEach(u => userMap.set(u.email.toLowerCase(), { ...u, role: 'customer', source: 'customers' }));
     owners.forEach(u => userMap.set(u.email.toLowerCase(), { ...u, role: 'boutique_owner', source: 'boutique_owners' }));
@@ -196,14 +200,14 @@ const getAllUsers = async (req, res) => {
 const toggleUserStatus = async (req, res) => {
   try {
     const { role, source } = req.body;
-    
+
     let Model;
     if (source === 'users') {
       Model = User;
     } else {
       Model = getUserModel(role);
     }
-    
+
     const user = await Model.findById(req.params.id);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
@@ -222,7 +226,7 @@ const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
     const { role, source } = req.query;
-    
+
     console.log(`[Admin Delete] Attempting to purge user. ID: ${id}, Role: ${role}, Source: ${source}`);
 
     let Model;
@@ -235,7 +239,7 @@ const deleteUser = async (req, res) => {
     if (!Model) {
       return res.status(400).json({ success: false, message: `Invalid model for role: ${role}, source: ${source}` });
     }
-    
+
     const user = await Model.findById(id);
     if (!user) {
       return res.status(404).json({ success: false, message: 'Identity not found in records' });
@@ -266,14 +270,14 @@ const verifyUser = async (req, res) => {
     const { id } = req.params;
     const { role, source } = req.body;
     const { User } = require('../models/User');
-    
+
     let Model;
     if (source === 'users') {
       Model = User;
     } else {
       Model = getUserModel(role);
     }
-    
+
     const user = await Model.findById(id);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });

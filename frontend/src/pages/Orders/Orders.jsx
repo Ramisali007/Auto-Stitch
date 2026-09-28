@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   Package, Clock, CheckCircle, Truck, Eye, ArrowUpRight, 
@@ -31,6 +31,7 @@ export default function Orders() {
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
   const filters = ['all', 'in_production', 'shipped', 'delivered'];
 
   useEffect(() => {

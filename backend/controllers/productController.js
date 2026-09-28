@@ -10,7 +10,7 @@ const productSchema = z.object({
   subCategory: z.string().optional().default(''),
   price: z.number().positive(),
   discountPrice: z.number().min(0).optional().default(0),
-  images: z.array(z.string().url()).max(8).optional().default([]),
+  images: z.array(z.string().min(1)).max(8).optional().default([]),
   sizes: z.array(z.string()).optional().default([]),
   colors: z.array(z.string()).optional().default([]),
   material: z.string().optional().default(''),

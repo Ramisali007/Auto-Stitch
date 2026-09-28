@@ -79,18 +79,25 @@ const register = async (req, res) => {
     const { captchaToken } = req.body;
 
     // Verify reCAPTCHA if configured
-    if (process.env.RECAPTCHA_SECRET_KEY && captchaToken && captchaToken !== 'bypass-recaptcha') {
+    if (process.env.RECAPTCHA_SECRET_KEY) {
+      if (!captchaToken) {
+        return res.status(400).json({ success: false, message: 'Please complete the reCAPTCHA verification' });
+      }
       try {
         const verificationUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${captchaToken}`;
         const verifyRes = await fetch(verificationUrl, { method: 'POST' });
         const verifyData = await verifyRes.json();
 
-        // If google returns invalid-domain/hostname-mismatch or success, permit
-        if (!verifyData.success && !verifyData['error-codes']?.includes('hostname-mismatch')) {
-          console.warn('[reCAPTCHA Warning]:', verifyData['error-codes']);
+        if (!verifyData.success) {
+          const errorCodes = verifyData['error-codes'] || [];
+          const isHostnameMismatch = errorCodes.includes('hostname-mismatch');
+          if (!isHostnameMismatch) {
+            return res.status(400).json({ success: false, message: 'reCAPTCHA verification failed. Please try again.' });
+          }
         }
       } catch (captchaErr) {
-        console.warn('[reCAPTCHA Notice]:', captchaErr.message);
+        console.error('[reCAPTCHA Notice]:', captchaErr.message);
+        return res.status(500).json({ success: false, message: 'Unable to verify reCAPTCHA. Please try again.' });
       }
     }
 
@@ -142,17 +149,25 @@ const login = async (req, res) => {
     const { email, password, portal, captchaToken } = req.body;
 
     // Verify reCAPTCHA if configured
-    if (process.env.RECAPTCHA_SECRET_KEY && captchaToken && captchaToken !== 'bypass-recaptcha') {
+    if (process.env.RECAPTCHA_SECRET_KEY) {
+      if (!captchaToken) {
+        return res.status(400).json({ success: false, message: 'Please complete the reCAPTCHA verification' });
+      }
       try {
         const verificationUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${captchaToken}`;
         const verifyRes = await fetch(verificationUrl, { method: 'POST' });
         const verifyData = await verifyRes.json();
 
-        if (!verifyData.success && !verifyData['error-codes']?.includes('hostname-mismatch')) {
-          console.warn('[reCAPTCHA Login Notice]:', verifyData['error-codes']);
+        if (!verifyData.success) {
+          const errorCodes = verifyData['error-codes'] || [];
+          const isHostnameMismatch = errorCodes.includes('hostname-mismatch');
+          if (!isHostnameMismatch) {
+            return res.status(400).json({ success: false, message: 'reCAPTCHA verification failed. Please try again.' });
+          }
         }
       } catch (captchaErr) {
-        console.warn('[reCAPTCHA Login Notice]:', captchaErr.message);
+        console.error('[reCAPTCHA Login Notice]:', captchaErr.message);
+        return res.status(500).json({ success: false, message: 'Unable to verify reCAPTCHA. Please try again.' });
       }
     }
 
@@ -483,7 +498,15 @@ const updateProfile = async (req, res) => {
     if (email) user.email = email;
     if (phone) user.phone = phone;
     if (address) user.address = address;
-    if (notifications) user.notifications = notifications;
+    if (notifications) {
+      user.notifications = {
+        email: notifications.email ?? user.notifications?.email ?? true,
+        inApp: notifications.inApp ?? user.notifications?.inApp ?? true,
+        push: notifications.push ?? user.notifications?.push ?? false,
+        orderUpdates: notifications.orderUpdates ?? user.notifications?.orderUpdates ?? true,
+        promotions: notifications.promotions ?? user.notifications?.promotions ?? false,
+      };
+    }
 
     const updatedUser = await user.save();
 

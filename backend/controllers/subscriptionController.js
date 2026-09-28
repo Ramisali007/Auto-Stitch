@@ -1,5 +1,7 @@
 const nodemailer = require('nodemailer');
 const Subscriber = require('../models/Subscriber');
+const { Admin } = require('../models/User');
+const Notification = require('../models/Notification');
 
 // @desc    Subscribe to newsletter and send confirmation email
 // @route   POST /api/subscribe
@@ -32,7 +34,24 @@ const subscribeNewsletter = async (req, res) => {
       subscriber = await Subscriber.create({ email: email.toLowerCase().trim() });
     }
 
-    // 2. Setup Nodemailer Transporter
+    // 2. Notify Platform Admins about new subscriber
+    try {
+      const admins = await Admin.find({ isActive: true });
+      for (const admin of admins) {
+        await Notification.create({
+          recipient: admin._id,
+          recipientModel: 'Admin',
+          type: 'system',
+          title: 'New Newsletter Subscriber',
+          message: `${subscriber.email} subscribed to the newsletter.`,
+          link: '/admin',
+        });
+      }
+    } catch (notifErr) {
+      console.error('Failed to create admin notification for subscriber:', notifErr.message);
+    }
+
+    // 3. Setup Nodemailer Transporter
     if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
       const transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
@@ -78,7 +97,11 @@ const subscribeNewsletter = async (req, res) => {
       await transporter.sendMail(mailOptions);
     }
 
-    res.status(200).json({ success: true, message: 'Subscribed successfully! Please check your email.' });
+    res.status(200).json({
+      success: true,
+      message: 'Subscribed successfully! Please check your email.',
+      subscriber
+    });
   } catch (error) {
     console.error('Subscription Error:', error);
     res.status(500).json({ success: false, message: 'Error processing subscription. Please try again later.' });
@@ -116,10 +139,30 @@ const unsubscribeNewsletter = async (req, res) => {
 const getSubscribers = async (req, res) => {
   try {
     const subscribers = await Subscriber.find().sort({ createdAt: -1 }).lean();
-    res.json({ success: true, count: subscribers.length, data: subscribers });
+    res.json({
+      success: true,
+      count: subscribers.length,
+      subscribers,
+      data: subscribers
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
-module.exports = { subscribeNewsletter, unsubscribeNewsletter, getSubscribers };
+// @desc    Delete subscriber (Admin)
+// @route   DELETE /api/subscribers/:id
+// @access  Private (Admin)
+const deleteSubscriber = async (req, res) => {
+  try {
+    const subscriber = await Subscriber.findByIdAndDelete(req.params.id);
+    if (!subscriber) {
+      return res.status(404).json({ success: false, message: 'Subscriber not found' });
+    }
+    res.json({ success: true, message: 'Subscriber removed successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+module.exports = { subscribeNewsletter, unsubscribeNewsletter, getSubscribers, deleteSubscriber };

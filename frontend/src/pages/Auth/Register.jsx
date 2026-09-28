@@ -42,6 +42,7 @@ export default function Register({ onLogin }) {
 
     if (form.password !== form.confirmPassword) return 'Passwords do not match';
     if (!consent) return 'Please accept the terms and privacy policy';
+    if (import.meta.env.VITE_RECAPTCHA_SITE_KEY && !captchaToken) return 'Please complete the reCAPTCHA verification';
     return null;
   };
 
@@ -52,7 +53,7 @@ export default function Register({ onLogin }) {
     setLoading(true);
     try {
       const res = await axios.post(`${API_URL}/api/auth/register`,
-        { name: form.name, email: form.email, password: form.password, role: form.role, captchaToken: captchaToken || 'bypass-recaptcha' },
+        { name: form.name, email: form.email, password: form.password, role: form.role, captchaToken },
         { withCredentials: true }
       );
       const data = res.data;

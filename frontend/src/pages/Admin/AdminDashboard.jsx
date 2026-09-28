@@ -4,7 +4,7 @@ import {
   Users, Package, Store, ShieldCheck, TrendingUp, 
   DollarSign, AlertTriangle, ChevronRight, BarChart2, Eye,
   CheckCircle, XCircle, RotateCcw as Loader, Sparkles,
-  LifeBuoy, Mail, Check, MessageSquare, Clock, Filter, Copy
+  LifeBuoy, Mail, Check, MessageSquare, Clock, Filter, Copy, Trash2
 } from 'lucide-react';
 import axios from 'axios';
 import API_URL from '../../config/api';
@@ -108,12 +108,25 @@ export default function AdminDashboard() {
     try {
       const res = await axios.get(`${API_URL}/api/subscribers`, { withCredentials: true });
       if (res.data.success) {
-        setSubscribers(res.data.subscribers || []);
+        setSubscribers(res.data.subscribers || res.data.data || []);
       }
     } catch (err) {
       toast.error('Failed to load newsletter subscribers');
     } finally {
       setSubscriberLoading(false);
+    }
+  };
+
+  const handleDeleteSubscriber = async (id) => {
+    if (!window.confirm('Are you sure you want to remove this subscriber?')) return;
+    try {
+      const res = await axios.delete(`${API_URL}/api/subscribers/${id}`, { withCredentials: true });
+      if (res.data.success) {
+        toast.success('Subscriber removed');
+        setSubscribers(prev => prev.filter(s => s._id !== id));
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete subscriber');
     }
   };
 
@@ -146,10 +159,10 @@ export default function AdminDashboard() {
     { label: 'Total Users', value: (stats.totalUsers || 0).toLocaleString(), icon: <Users size={18} />, change: '+12% this month' },
     { label: 'Active Products', value: (stats.activeProducts || 0).toLocaleString(), icon: <Package size={18} />, change: 'Across all ateliers' },
     { label: 'Registered Boutiques', value: (stats.registeredBoutiques || 0).toLocaleString(), icon: <Store size={18} />, change: `${stats.pendingBoutiques || 0} pending review` },
+    { label: 'Newsletter Subscribers', value: (stats.totalSubscribers || 0).toLocaleString(), icon: <Mail size={18} />, change: 'Audience reach' },
     { label: 'Gross Platform GMV', value: `PKR ${(stats.totalRevenue || 0).toLocaleString()}`, icon: <DollarSign size={18} />, change: '+18.4% performance' },
     { label: 'Platform Net Take (10%)', value: `PKR ${(stats.platformCommission || Math.round((stats.totalRevenue || 0) * 0.10)).toLocaleString()}`, icon: <TrendingUp size={18} />, change: 'Automated commission' },
     { label: 'Total Orders', value: (stats.totalOrdersCount || 0).toLocaleString(), icon: <BarChart2 size={18} />, change: 'Standard & bespoke' },
-    { label: 'Avg Order Value', value: `PKR ${(stats.avgOrderValue || 0).toLocaleString()}`, icon: <DollarSign size={18} />, change: 'Per customer basket' },
     { label: 'Active Custom Bids', value: (stats.activeBidsCount || 0).toLocaleString(), icon: <Sparkles size={18} />, change: 'In live bidding' },
   ];
 
@@ -576,6 +589,7 @@ export default function AdminDashboard() {
                       <th style={{ padding: '12px 16px', fontWeight: 700 }}>Email Address</th>
                       <th style={{ padding: '12px 16px', fontWeight: 700 }}>Subscribed Date</th>
                       <th style={{ padding: '12px 16px', fontWeight: 700 }}>Status</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 700, textAlign: 'right' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -585,9 +599,30 @@ export default function AdminDashboard() {
                         <td style={{ padding: '12px 16px', fontWeight: 600, color: '#1a1a2e' }}>{sub.email}</td>
                         <td style={{ padding: '12px 16px', color: '#666' }}>{new Date(sub.subscribedAt || sub.createdAt).toLocaleDateString()}</td>
                         <td style={{ padding: '12px 16px' }}>
-                          <span style={{ background: '#f0fdf4', color: '#16a34a', padding: '2px 8px', fontSize: '0.75rem', fontWeight: 700 }}>
-                            ACTIVE
+                          <span style={{ background: sub.isActive !== false ? '#f0fdf4' : '#fef2f2', color: sub.isActive !== false ? '#16a34a' : '#dc2626', padding: '2px 8px', fontSize: '0.75rem', fontWeight: 700 }}>
+                            {sub.isActive !== false ? 'ACTIVE' : 'UNSUBSCRIBED'}
                           </span>
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSubscriber(sub._id)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#ef4444',
+                              cursor: 'pointer',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '0.75rem'
+                            }}
+                            title="Remove Subscriber"
+                          >
+                            <Trash2 size={14} /> Remove
+                          </button>
                         </td>
                       </tr>
                     ))}
