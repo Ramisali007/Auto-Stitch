@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { 
   createCustomizationRequest, 
+  generateCustomizationPreview,
   getAvailableRequests, 
   submitBid, 
   getBidsForRequest, 
@@ -13,6 +14,7 @@ const {
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 // Customization Request & Management routes (Available to all registered users: customers, boutique owners, admins)
+router.post('/preview', protect, generateCustomizationPreview);
 router.post('/request', protect, authorize('customer', 'boutique_owner', 'admin'), createCustomizationRequest);
 router.get('/my-requests', protect, authorize('customer', 'boutique_owner', 'admin'), getMyRequests);
 router.get('/requests/:requestId/bids', protect, authorize('customer', 'boutique_owner', 'admin'), getBidsForRequest);

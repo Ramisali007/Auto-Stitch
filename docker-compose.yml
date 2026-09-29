@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # MongoDB Database Service
+  mongodb:
+    image: mongo:6.0
+    container_name: autostitch_mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - autostitch_mongo_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=autostitch
+
+  # Node.js Express REST & WebSocket API Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: autostitch_backend
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - MONGO_URI=mongodb://mongodb:27017/autostitch
+      - CLIENT_URL=http://localhost:5173
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./frontend/public/Photos:/frontend/public/Photos
+
+  # React Vite Frontend Client
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: autostitch_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:5000
+
+volumes:
+  autostitch_mongo_data:
+    driver: local

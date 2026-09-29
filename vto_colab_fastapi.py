@@ -67,6 +67,8 @@ def health():
     return {"ready": True, "device": device, "service": "Auto-Stitch-FastAPI-VTO"}
 
 @app.post("/api/tryon")
+@app.post("/tryon_direct")
+@app.post("/tryon")
 async def generate_tryon(req: TryOnRequest):
     try:
         human_img = decode_base64_img(req.human_image).resize((512, 768), Image.LANCZOS)
@@ -85,20 +87,28 @@ async def generate_tryon(req: TryOnRequest):
             (int(w * 0.05), int(h * 0.98)),
         ], fill=255)
 
-        mask = mask.filter(ImageFilter.GaussianBlur(radius=8))
+        # 2. Composite the actual garment image into the human torso area
+        # This provides the diffusion model with the authentic fabric texture, colors, and embroidery!
+        g_w, g_h = int(w * 0.72), int(h * 0.62)
+        g_resized = garment_img.resize((g_w, g_h), Image.LANCZOS)
+        g_x = int((w - g_w) / 2)
+        g_y = int(h * 0.21)
 
-        # 2. Diffusion Neural Inpainting
-        prompt = f"photorealistic elegant model wearing luxury {req.category}, natural cloth folds, studio lighting, highly detailed fabric"
-        negative_prompt = "deformed, bad anatomy, blurry, duplicate head, artifacts"
+        composite_init = human_img.copy()
+        composite_init.paste(g_resized, (g_x, g_y))
+
+        # 3. Diffusion Neural Inpainting & Seam Harmonization
+        prompt = f"photorealistic elegant model wearing authentic {req.garment_name}, {req.category}, natural cloth folds, authentic fabric embroidery and pattern, studio lighting"
+        negative_prompt = "deformed, bad anatomy, blurry, duplicate head, artifacts, lowres"
 
         with torch.inference_mode():
             result = pipe(
                 prompt=prompt,
                 negative_prompt=negative_prompt,
-                image=human_img,
+                image=composite_init,
                 mask_image=mask,
-                num_inference_steps=20,
-                guidance_scale=7.5,
+                num_inference_steps=25,
+                guidance_scale=6.5,
             ).images[0]
 
         result_b64 = encode_img_base64(result)

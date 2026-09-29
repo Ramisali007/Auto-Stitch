@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import API_URL from '../../config/api';
 import {
   ArrowRight, Truck, CreditCard, ShieldCheck,
   ChevronRight, ShoppingBag, Heart, Eye,
@@ -89,8 +91,28 @@ export default function Home({ user }) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [currentOccasion, setCurrentOccasion] = useState(0);
   const [activeTrendingTab, setActiveTrendingTab] = useState('NEW ARRIVALS');
+  const [catalogProducts, setCatalogProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const trendingTrackRef = useRef(null);
   const socialTrackRef = useRef(null);
+
+  // Fetch real catalog products from backend for trending display
+  useEffect(() => {
+    const fetchLiveProducts = async () => {
+      setLoadingProducts(true);
+      try {
+        const { data } = await axios.get(`${API_URL}/api/products?limit=12&sort=newest`);
+        if (data.products && data.products.length > 0) {
+          setCatalogProducts(data.products);
+        }
+      } catch (err) {
+        console.warn('Using curated trending fallback:', err.message);
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+    fetchLiveProducts();
+  }, []);
 
   // Auto-loop for occasions
   useEffect(() => {
@@ -108,17 +130,25 @@ export default function Home({ user }) {
     return () => clearInterval(timer);
   }, []);
 
-  const onProtectedClick = (e, targetPath = '/boutiques') => {
-    if (e) e.preventDefault();
-    handleProtectedAction(user, navigate, () => navigate(targetPath));
-  };
-
   const scrollTrack = (ref, direction) => {
     if (ref.current) {
       const scrollAmount = direction === 'left' ? -400 : 400;
       ref.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     }
   };
+
+  // Filter catalog products by active tab if matching category exists
+  const displayedTrending = catalogProducts.length > 0 
+    ? catalogProducts.map(p => ({
+        id: p._id,
+        _id: p._id,
+        img: p.images?.[0] || 'https://picsum.photos/seed/d1/600/800',
+        title: p.name,
+        price: `PKR ${p.price?.toLocaleString()}`,
+        badge: 'New',
+        isReal: true
+      }))
+    : TRENDING_PRODUCTS;
 
   return (
     <div className="home-page">
@@ -133,7 +163,7 @@ export default function Home({ user }) {
               <div
                 className="hero-slide-bg"
                 style={{ backgroundImage: `url(${slide.image})`, cursor: 'pointer' }}
-                onClick={(e) => onProtectedClick(e, '/boutiques')}
+                onClick={() => navigate('/catalogue')}
               />
               <div className="hero-overlay" />
             </div>
@@ -183,7 +213,7 @@ export default function Home({ user }) {
               <div
                 key={`${d.id}-${idx}`}
                 className="designer-text-link"
-                onClick={(e) => onProtectedClick(e, `/boutiques/${d.id}`)}
+                onClick={() => navigate(`/boutiques/${d.id}`)}
                 style={{ cursor: 'pointer' }}
               >
                 <span className="designer-name-loop">{d.name}</span>
@@ -228,7 +258,7 @@ export default function Home({ user }) {
               <div
                 className="eid-card-premium"
                 key={idx}
-                onClick={(e) => onProtectedClick(e, '/boutiques')}
+                onClick={() => navigate(`/catalogue?category=${encodeURIComponent(item.name)}`)}
                 style={{ cursor: 'pointer' }}
               >
                 <img src={item.img} alt={item.name} />
@@ -249,7 +279,7 @@ export default function Home({ user }) {
             <span className="occasion-label">{OCCASIONS[currentOccasion].label}</span>
             <h2 className="occasion-heading">Shop By Occasion</h2>
             <p className="occasion-desc">{OCCASIONS[currentOccasion].desc}</p>
-            <button className="shop-look-btn" onClick={(e) => onProtectedClick(e, '/boutiques')}>
+            <button className="shop-look-btn" onClick={() => navigate(`/catalogue?category=${encodeURIComponent(OCCASIONS[currentOccasion].title)}`)}>
               Shop The Look <ArrowRight size={18} />
             </button>
             <div className="occasion-indicators">
@@ -272,7 +302,7 @@ export default function Home({ user }) {
                   <div
                     key={occ.id}
                     className="occasion-slide"
-                    onClick={(e) => onProtectedClick(e, '/boutiques')}
+                    onClick={() => navigate(`/catalogue?category=${encodeURIComponent(occ.title)}`)}
                     style={{ cursor: 'pointer' }}
                   >
                     <img src={occ.img} alt={occ.title} className="occasion-img" />
@@ -301,7 +331,7 @@ export default function Home({ user }) {
               ))}
             </div>
             <div className="trending-controls">
-              <Link to="/boutiques" className="view-all-link">View all</Link>
+              <Link to="/catalogue" className="view-all-link">View all</Link>
               <div className="trending-arrows">
                 <button className="trending-arrow" onClick={() => scrollTrack(trendingTrackRef, 'left')}><ChevronLeft size={20} /></button>
                 <button className="trending-arrow" onClick={() => scrollTrack(trendingTrackRef, 'right')}><ChevronRight size={20} /></button>
@@ -312,11 +342,18 @@ export default function Home({ user }) {
 
         <div className="trending-slider-container">
           <div className="trending-track" ref={trendingTrackRef}>
-            {TRENDING_PRODUCTS.map(product => (
+            {displayedTrending.map(product => (
               <div
-                key={product.id}
+                key={product.id || product._id}
                 className="trending-card"
-                onClick={(e) => onProtectedClick(e, '/boutiques')}
+                onClick={() => {
+                  if (product._id && product.isReal) {
+                    navigate(`/products/${product._id}`);
+                  } else {
+                    navigate('/catalogue');
+                  }
+                }}
+                style={{ cursor: 'pointer' }}
               >
                 <div className="trending-img-box">
                   <img src={product.img} alt={product.title} />
@@ -343,7 +380,7 @@ export default function Home({ user }) {
       {/* Signature Video Banner */}
       <section
         className="signature-banner"
-        onClick={(e) => onProtectedClick(e, '/boutiques')}
+        onClick={() => navigate('/catalogue')}
         style={{ cursor: 'pointer' }}
       >
         <video className="signature-video" autoPlay muted loop playsInline>
@@ -389,7 +426,7 @@ export default function Home({ user }) {
                       <span className="social-user-cat">{item.cat}</span>
                     </div>
                   </div>
-                  <div className="social-card-img" onClick={(e) => onProtectedClick(e, '/boutiques')}>
+                  <div className="social-card-img" onClick={() => navigate(`/catalogue?category=${encodeURIComponent(item.cat)}`)} style={{ cursor: 'pointer' }}>
                     <img src={item.img} alt={`Worn by ${item.user}`} />
                   </div>
                   <div className="social-card-footer">
@@ -398,7 +435,7 @@ export default function Home({ user }) {
                       <Eye size={18} />
                       <ArrowRight size={18} className="rotate-neg-45" />
                     </div>
-                    <div className="social-shop-link" onClick={(e) => onProtectedClick(e, '/boutiques')}>
+                    <div className="social-shop-link" onClick={() => navigate(`/catalogue?category=${encodeURIComponent(item.cat)}`)} style={{ cursor: 'pointer' }}>
                       <span>Shop Now</span>
                       <ShoppingBag size={14} />
                     </div>

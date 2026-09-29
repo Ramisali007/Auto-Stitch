@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import API_URL from './config/api';
@@ -9,7 +9,7 @@ import Footer from './components/Footer/Footer';
 import ScrollToTop from './components/ScrollToTop';
 import CartDrawer from './components/CartDrawer/CartDrawer';
 
-// Pages
+// Core Eager Pages
 import Home from './pages/Home/Home';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
@@ -19,24 +19,16 @@ import ForgotPassword from './pages/Auth/ForgotPassword';
 import ProductDetail from './pages/ProductDetail/ProductDetail';
 import CustomerDashboard from './pages/Dashboard/CustomerDashboard';
 import BoutiqueDashboard from './pages/Dashboard/BoutiqueDashboard';
-import VirtualTryOn from './pages/VirtualTryOn/VirtualTryOn';
 import BoutiqueDirectory from './pages/Boutique/BoutiqueDirectory';
 import BoutiqueProfile from './pages/Boutique/BoutiqueProfile';
 import SizeGuide from './pages/Info/SizeGuide';
 import InfoPage from './pages/Info/InfoPage';
-import Customize from './pages/Customize/Customize';
-import Bids from './pages/Bids/Bids';
-import Chat from './pages/Chat/Chat';
-import BoutiqueBids from './pages/Boutique/BoutiqueBids';
 import Cart from './pages/Cart/Cart';
-
-// New fully-built pages
 import Orders from './pages/Orders/Orders';
 import OrderDetail from './pages/Orders/OrderDetail';
 import Wishlist from './pages/Wishlist/Wishlist';
 import Checkout from './pages/Checkout/Checkout';
 import Profile from './pages/Profile/Profile';
-import Recommendations from './pages/Recommendations/Recommendations';
 import About from './pages/About/About';
 import Careers from './pages/Careers/Careers';
 import Contact from './pages/Contact/Contact';
@@ -47,13 +39,21 @@ import FAQ from './pages/Info/FAQ';
 import TrackOrder from './pages/Info/TrackOrder';
 import StoreLocator from './pages/Info/StoreLocator';
 import NotFound from './pages/NotFound/NotFound';
-import AdminDashboard from './pages/Admin/AdminDashboard';
-import UserManagement from './pages/Admin/UserManagement';
-import ListingModeration from './pages/Admin/ListingModeration';
-import ManageProducts from './pages/BoutiqueManage/ManageProducts';
-import BoutiqueOrders from './pages/BoutiqueManage/BoutiqueOrders';
-import Analytics from './pages/BoutiqueManage/Analytics';
 import Catalogue from './pages/Catalogue/Catalogue';
+import Bids from './pages/Bids/Bids';
+
+// Lazy Loaded Heavy Modules (Code-Split)
+const VirtualTryOn = lazy(() => import('./pages/VirtualTryOn/VirtualTryOn'));
+const Customize = lazy(() => import('./pages/Customize/Customize'));
+const Chat = lazy(() => import('./pages/Chat/Chat'));
+const Recommendations = lazy(() => import('./pages/Recommendations/Recommendations'));
+const BoutiqueBids = lazy(() => import('./pages/Boutique/BoutiqueBids'));
+const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard'));
+const UserManagement = lazy(() => import('./pages/Admin/UserManagement'));
+const ListingModeration = lazy(() => import('./pages/Admin/ListingModeration'));
+const ManageProducts = lazy(() => import('./pages/BoutiqueManage/ManageProducts'));
+const BoutiqueOrders = lazy(() => import('./pages/BoutiqueManage/BoutiqueOrders'));
+const Analytics = lazy(() => import('./pages/BoutiqueManage/Analytics'));
 
 function ProtectedRoute({ user, allowedRoles, children }) {
   if (!user) return <Navigate to="/login" replace />;
@@ -134,74 +134,80 @@ export default function App() {
             <Navbar user={user} onLogout={handleLogout} />
             <CartDrawer />
 
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Home user={user} />} />
-              <Route path="/products/:id" element={<ProductDetail />} />
-              <Route path="/try-on" element={<ProtectedRoute user={user}><VirtualTryOn /></ProtectedRoute>} />
-              <Route path="/boutiques" element={<BoutiqueDirectory />} />
-              <Route path="/boutiques/:id" element={<BoutiqueProfile />} />
-              <Route path="/catalogue" element={<Catalogue />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/careers" element={<Careers />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/size-guide" element={<SizeGuide />} />
-              <Route path="/customize" element={<ProtectedRoute user={user}><Customize /></ProtectedRoute>} />
-              <Route path="/chat" element={<ProtectedRoute user={user}><Chat /></ProtectedRoute>} />
+            <Suspense fallback={
+              <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '40px', height: '40px', border: '3px solid #e1e4e8', borderTopColor: '#c5a059', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+              </div>
+            }>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<Home user={user} />} />
+                <Route path="/products/:id" element={<ProductDetail />} />
+                <Route path="/try-on" element={<ProtectedRoute user={user}><VirtualTryOn /></ProtectedRoute>} />
+                <Route path="/boutiques" element={<BoutiqueDirectory />} />
+                <Route path="/boutiques/:id" element={<BoutiqueProfile />} />
+                <Route path="/catalogue" element={<Catalogue />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/careers" element={<Careers />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/size-guide" element={<SizeGuide />} />
+                <Route path="/customize" element={<ProtectedRoute user={user}><Customize /></ProtectedRoute>} />
+                <Route path="/chat" element={<ProtectedRoute user={user}><Chat /></ProtectedRoute>} />
 
-              {/* Info Pages */}
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/returns" element={<Returns />} />
-              <Route path="/shipping" element={<InfoPage />} />
-              <Route path="/faq" element={<FAQ />} />
-              <Route path="/stores" element={<StoreLocator />} />
-              <Route path="/track" element={<TrackOrder />} />
+                {/* Info Pages */}
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/returns" element={<Returns />} />
+                <Route path="/shipping" element={<InfoPage />} />
+                <Route path="/faq" element={<FAQ />} />
+                <Route path="/stores" element={<StoreLocator />} />
+                <Route path="/track" element={<TrackOrder />} />
 
-              {/* Auth Routes (redirect if logged in) */}
-              <Route path="/login" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace /> : <Login onLogin={handleLogin} />} />
-              <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <Register onLogin={handleLogin} />} />
-              <Route path="/admin-login" element={user && user.role === 'admin' ? <Navigate to="/admin" replace /> : <AdminLogin onLogin={handleLogin} />} />
-              <Route path="/boutique-login" element={user && user.role === 'boutique_owner' ? <Navigate to="/boutique/dashboard" replace /> : <BoutiqueLogin onLogin={handleLogin} />} />
-              <Route path="/forgot-password" element={user ? <Navigate to="/dashboard" replace /> : <ForgotPassword />} />
+                {/* Auth Routes (redirect if logged in) */}
+                <Route path="/login" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace /> : <Login onLogin={handleLogin} />} />
+                <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <Register onLogin={handleLogin} />} />
+                <Route path="/admin-login" element={user && user.role === 'admin' ? <Navigate to="/admin" replace /> : <AdminLogin onLogin={handleLogin} />} />
+                <Route path="/boutique-login" element={user && user.role === 'boutique_owner' ? <Navigate to="/boutique/dashboard" replace /> : <BoutiqueLogin onLogin={handleLogin} />} />
+                <Route path="/forgot-password" element={user ? <Navigate to="/dashboard" replace /> : <ForgotPassword />} />
 
-              {/* Customer & Marketplace Customization Routes */}
-              <Route path="/dashboard" element={
-                <ProtectedRoute user={user}>
-                  <CustomerDashboard user={user} onLogout={handleLogout} />
-                </ProtectedRoute>
-              } />
-              <Route path="/orders" element={<ProtectedRoute user={user}><Orders /></ProtectedRoute>} />
-              <Route path="/orders/:id" element={<ProtectedRoute user={user}><OrderDetail /></ProtectedRoute>} />
-              <Route path="/wishlist" element={<ProtectedRoute user={user}><Wishlist /></ProtectedRoute>} />
-              <Route path="/bids" element={<ProtectedRoute user={user}><Bids /></ProtectedRoute>} />
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/checkout" element={<ProtectedRoute user={user}><Checkout /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute user={user}><Profile user={user} onUpdate={setUser} onLogout={handleLogout} /></ProtectedRoute>} />
-              <Route path="/boutique/settings" element={<ProtectedRoute user={user}><Profile user={user} onUpdate={setUser} onLogout={handleLogout} /></ProtectedRoute>} />
-              <Route path="/recommendations" element={<ProtectedRoute user={user}><Recommendations /></ProtectedRoute>} />
+                {/* Customer & Marketplace Customization Routes */}
+                <Route path="/dashboard" element={
+                  <ProtectedRoute user={user}>
+                    <CustomerDashboard user={user} onLogout={handleLogout} />
+                  </ProtectedRoute>
+                } />
+                <Route path="/orders" element={<ProtectedRoute user={user}><Orders /></ProtectedRoute>} />
+                <Route path="/orders/:id" element={<ProtectedRoute user={user}><OrderDetail /></ProtectedRoute>} />
+                <Route path="/wishlist" element={<ProtectedRoute user={user}><Wishlist /></ProtectedRoute>} />
+                <Route path="/bids" element={<ProtectedRoute user={user}><Bids /></ProtectedRoute>} />
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/checkout" element={<ProtectedRoute user={user}><Checkout /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute user={user}><Profile user={user} onUpdate={setUser} onLogout={handleLogout} /></ProtectedRoute>} />
+                <Route path="/boutique/settings" element={<ProtectedRoute user={user}><Profile user={user} onUpdate={setUser} onLogout={handleLogout} /></ProtectedRoute>} />
+                <Route path="/recommendations" element={<ProtectedRoute user={user}><Recommendations /></ProtectedRoute>} />
 
-              {/* Boutique Owner Routes */}
-              <Route path="/boutique/dashboard" element={
-                <ProtectedRoute user={user} allowedRoles={['boutique_owner']}>
-                  <BoutiqueDashboard user={user} />
-                </ProtectedRoute>
-              } />
-              <Route path="/boutique/products" element={<ProtectedRoute user={user} allowedRoles={['boutique_owner']}><ManageProducts /></ProtectedRoute>} />
-              <Route path="/boutique/products/new" element={<ProtectedRoute user={user} allowedRoles={['boutique_owner']}><ManageProducts /></ProtectedRoute>} />
-              <Route path="/boutique/orders" element={<ProtectedRoute user={user} allowedRoles={['boutique_owner']}><BoutiqueOrders /></ProtectedRoute>} />
-              <Route path="/boutique/bids" element={<ProtectedRoute user={user} allowedRoles={['boutique_owner']}><BoutiqueBids /></ProtectedRoute>} />
-              <Route path="/boutique/bids/:id" element={<ProtectedRoute user={user} allowedRoles={['boutique_owner']}><BoutiqueBids /></ProtectedRoute>} />
-              <Route path="/boutique/analytics" element={<ProtectedRoute user={user} allowedRoles={['boutique_owner']}><Analytics /></ProtectedRoute>} />
+                {/* Boutique Owner Routes */}
+                <Route path="/boutique/dashboard" element={
+                  <ProtectedRoute user={user} allowedRoles={['boutique_owner']}>
+                    <BoutiqueDashboard user={user} />
+                  </ProtectedRoute>
+                } />
+                <Route path="/boutique/products" element={<ProtectedRoute user={user} allowedRoles={['boutique_owner']}><ManageProducts /></ProtectedRoute>} />
+                <Route path="/boutique/products/new" element={<ProtectedRoute user={user} allowedRoles={['boutique_owner']}><ManageProducts /></ProtectedRoute>} />
+                <Route path="/boutique/orders" element={<ProtectedRoute user={user} allowedRoles={['boutique_owner']}><BoutiqueOrders /></ProtectedRoute>} />
+                <Route path="/boutique/bids" element={<ProtectedRoute user={user} allowedRoles={['boutique_owner']}><BoutiqueBids /></ProtectedRoute>} />
+                <Route path="/boutique/bids/:id" element={<ProtectedRoute user={user} allowedRoles={['boutique_owner']}><BoutiqueBids /></ProtectedRoute>} />
+                <Route path="/boutique/analytics" element={<ProtectedRoute user={user} allowedRoles={['boutique_owner']}><Analytics /></ProtectedRoute>} />
 
-              {/* Admin Routes */}
-              <Route path="/admin" element={<ProtectedRoute user={user} allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
-              <Route path="/admin/users" element={<ProtectedRoute user={user} allowedRoles={['admin']}><UserManagement /></ProtectedRoute>} />
-              <Route path="/admin/listings" element={<ProtectedRoute user={user} allowedRoles={['admin']}><ListingModeration /></ProtectedRoute>} />
+                {/* Admin Routes */}
+                <Route path="/admin" element={<ProtectedRoute user={user} allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+                <Route path="/admin/users" element={<ProtectedRoute user={user} allowedRoles={['admin']}><UserManagement /></ProtectedRoute>} />
+                <Route path="/admin/listings" element={<ProtectedRoute user={user} allowedRoles={['admin']}><ListingModeration /></ProtectedRoute>} />
 
-              {/* 404 */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+                {/* 404 */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
 
             <Chatbot />
             <Footer />

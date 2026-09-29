@@ -4,7 +4,9 @@ const sharp = require('sharp');
 const TryOnJob = require('../models/TryOnJob');
 const Product = require('../models/Product');
 const Boutique = require('../models/Boutique');
-const LocalSharpAdapter = require('../vto/LocalSharpAdapter');
+process.env.VTO_PROVIDER = 'mock';
+
+const vtoService = require('../vto/VirtualTryOnService');
 
 describe('Virtual Try-On (VTO) Subsystem Tests', () => {
   let sampleProduct;
@@ -21,6 +23,13 @@ describe('Virtual Try-On (VTO) Subsystem Tests', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
     expect(Array.isArray(res.body.products)).toBe(true);
+  });
+
+  it('GET /api/vto/health should return provider diagnostics', async () => {
+    const res = await request(app).get('/api/vto/health');
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.activeProvider).toBeDefined();
   });
 
   it('POST /api/vto/session should reject missing productId', async () => {
@@ -65,9 +74,7 @@ describe('Virtual Try-On (VTO) Subsystem Tests', () => {
     expect(res.body.success).toBe(false);
   });
 
-  it('LocalSharpAdapter should generate valid try-on composite without throwing', async () => {
-    const localAdapter = new LocalSharpAdapter();
-
+  it('VirtualTryOnService should validate and execute inference on active provider', async () => {
     // Create 400x600 test buffers
     const personBuffer = await sharp({
       create: { width: 400, height: 600, channels: 3, background: { r: 240, g: 220, b: 210 } }
@@ -77,11 +84,18 @@ describe('Virtual Try-On (VTO) Subsystem Tests', () => {
       create: { width: 400, height: 600, channels: 3, background: { r: 180, g: 40, b: 60 } }
     }).jpeg().toBuffer();
 
-    const result = await localAdapter.generate(personBuffer, garmentBuffer, { category: 'dresses' });
-    expect(result).toBeDefined();
-    expect(Buffer.isBuffer(result)).toBe(true);
+    const result = await vtoService.execute({
+      personBuffer,
+      garmentBuffer,
+      category: 'one-pieces',
+      garmentName: 'Silk Gown',
+    });
 
-    const meta = await sharp(result).metadata();
+    expect(result).toBeDefined();
+    expect(result.success).toBe(true);
+    expect(Buffer.isBuffer(result.buffer)).toBe(true);
+
+    const meta = await sharp(result.buffer).metadata();
     expect(meta.width).toBeGreaterThan(0);
     expect(meta.height).toBeGreaterThan(0);
   });

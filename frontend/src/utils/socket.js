@@ -5,8 +5,10 @@ let socket;
 
 export const initSocket = (userId) => {
   if (!socket) {
+    const token = localStorage.getItem('token');
     socket = io(API_URL, {
       withCredentials: true,
+      auth: { token },
       transports: ['websocket', 'polling']
     });
 

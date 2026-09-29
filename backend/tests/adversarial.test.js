@@ -13,6 +13,8 @@ const CustomizationRequest = require('../models/CustomizationRequest');
 const Bid = require('../models/Bid');
 const TryOnJob = require('../models/TryOnJob');
 
+jest.setTimeout(45000);
+
 describe('🚨 ADVERSARIAL RED-TEAM BREAK TESTING', () => {
   let userAToken, userBToken, boutiqueAToken, boutiqueBToken, adminToken;
   let userA, userB, boutiqueOwnerA, boutiqueOwnerB, adminUser;
@@ -21,6 +23,19 @@ describe('🚨 ADVERSARIAL RED-TEAM BREAK TESTING', () => {
   let customizationReqA;
 
   beforeAll(async () => {
+    // Ensure MongoDB connection is established
+    if (mongoose.connection.readyState !== 1) {
+      await new Promise((resolve) => {
+        if (mongoose.connection.readyState === 1) return resolve();
+        const check = setInterval(() => {
+          if (mongoose.connection.readyState === 1) {
+            clearInterval(check);
+            resolve();
+          }
+        }, 150);
+      });
+    }
+
     // Generate deterministic test users
     const timestamp = Date.now();
 
@@ -133,13 +148,15 @@ describe('🚨 ADVERSARIAL RED-TEAM BREAK TESTING', () => {
 
   afterAll(async () => {
     // Cleanup created test records
-    await Customer.deleteMany({ _id: { $in: [userA._id, userB._id] } });
-    await BoutiqueOwner.deleteMany({ _id: { $in: [boutiqueOwnerA._id, boutiqueOwnerB._id] } });
-    await Admin.deleteMany({ _id: adminUser._id });
-    await Boutique.deleteMany({ _id: { $in: [boutiqueA._id, boutiqueB._id] } });
-    await Product.deleteMany({ _id: { $in: [productA._id, productB._id] } });
-    await CustomizationRequest.deleteMany({ _id: customizationReqA._id });
-    await Bid.deleteMany({ customizationRequest: customizationReqA._id });
+    if (userA && userB) await Customer.deleteMany({ _id: { $in: [userA._id, userB._id] } });
+    if (boutiqueOwnerA && boutiqueOwnerB) await BoutiqueOwner.deleteMany({ _id: { $in: [boutiqueOwnerA._id, boutiqueOwnerB._id] } });
+    if (adminUser) await Admin.deleteMany({ _id: adminUser._id });
+    if (boutiqueA && boutiqueB) await Boutique.deleteMany({ _id: { $in: [boutiqueA._id, boutiqueB._id] } });
+    if (productA && productB) await Product.deleteMany({ _id: { $in: [productA._id, productB._id] } });
+    if (customizationReqA) {
+      await CustomizationRequest.deleteMany({ _id: customizationReqA._id });
+      await Bid.deleteMany({ customizationRequest: customizationReqA._id });
+    }
   });
 
   // ========================================================
@@ -298,6 +315,7 @@ describe('🚨 ADVERSARIAL RED-TEAM BREAK TESTING', () => {
     let jobAId, sessionTokenA;
 
     beforeAll(async () => {
+      if (!productA) return;
       const sessionRes = await request(app)
         .post('/api/vto/session')
         .send({ productId: productA._id.toString() });

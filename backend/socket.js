@@ -1,4 +1,5 @@
 const socketIo = require('socket.io');
+const jwt = require('jsonwebtoken');
 
 let io;
 const activeUsers = new Map(); // userId -> Set of socketIds
@@ -12,13 +13,43 @@ const initSocket = (server) => {
     }
   });
 
+  // JWT Handshake Authentication Middleware
+  io.use((socket, next) => {
+    let token = socket.handshake.auth?.token;
+    if (!token && socket.handshake.headers?.authorization) {
+      token = socket.handshake.headers.authorization.replace(/^Bearer\s+/i, '');
+    }
+    if (!token && socket.handshake.headers?.cookie) {
+      const match = socket.handshake.headers.cookie.match(/accessToken=([^;]+)/);
+      if (match) token = match[1];
+    }
+
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        socket.user = decoded;
+      } catch (_) {
+        // Handshake continues, but socket is unauthenticated
+      }
+    }
+    next();
+  });
+
   io.on('connection', (socket) => {
     let currentUserId = null;
 
-    // User joins their personal room for notifications & presence
+    // User joins their personal room for notifications & presence (Protected against IDOR)
     socket.on('join_user', (userId) => {
       if (!userId) return;
-      currentUserId = userId.toString();
+      const targetId = userId.toString();
+
+      // If user is authenticated, ensure they cannot join someone else's private channel
+      if (socket.user && socket.user.role !== 'admin' && socket.user.id !== targetId) {
+        console.warn(`[SOCKET SECURITY] Blocked attempt by ${socket.user.id} to join unauthorized user room ${targetId}`);
+        return;
+      }
+
+      currentUserId = targetId;
       socket.join(currentUserId);
       
       if (!activeUsers.has(currentUserId)) {

@@ -27,10 +27,12 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || origin.includes('onrender.com')) {
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || origin.includes('onrender.com') || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      callback(null, true);
+    } else if (process.env.NODE_ENV !== 'production') {
       callback(null, true);
     } else {
-      callback(null, true); // Permissive in production for all client storefronts
+      callback(new Error('Blocked by CORS policy: Origin not allowed'));
     }
   },
   credentials: true,
@@ -85,6 +87,7 @@ app.use('/api/stores', require('./routes/storeRoutes'));
 app.use('/api', require('./routes/subscriptionRoutes'));
 app.use('/api/try-on', require('./routes/tryOnRoutes'));
 app.use('/api/vto', require('./routes/tryOnRoutes'));
+app.use('/api/virtual-try-on', require('./routes/tryOnRoutes'));
 app.use('/api/recommendations', require('./routes/recommendationRoutes'));
 app.use('/api/coupons', require('./routes/couponRoutes'));
 

@@ -12,6 +12,7 @@ const customizationRequestSchema = z.object({
   description: z.string().max(2000).optional().default(''),
   referenceImages: z.array(z.string()).max(5).optional().default([]),
   budget: z.number().positive().optional(),
+  previewImage: z.string().optional(),
 });
 
 const submitBidSchema = z.object({
@@ -31,7 +32,7 @@ const createCustomizationRequest = async (req, res) => {
       const errors = parsed.error.issues.map(i => i.message).join(', ');
       return res.status(400).json({ success: false, message: errors });
     }
-    const { productId, selectedRegions, description, referenceImages, budget } = parsed.data;
+    const { productId, selectedRegions, description, referenceImages, budget, previewImage } = parsed.data;
 
     const customizationRequest = await CustomizationRequest.create({
       customer: req.user._id,
@@ -40,6 +41,7 @@ const createCustomizationRequest = async (req, res) => {
       description,
       referenceImages,
       budget,
+      previewImage: previewImage || '',
       status: 'submitted',
       expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000), // 72 hours
     });
@@ -415,8 +417,162 @@ const getMyBids = async (req, res) => {
   }
 };
 
+// @desc    Generate AI preview for customization request (Side-by-Side review)
+// @route   POST /api/bids/preview
+// @access  Private (Customer)
+const generateCustomizationPreview = async (req, res) => {
+  try {
+    const { productId, selectedRegions = [], referenceImages = [], description = '' } = req.body;
+    const sharp = require('sharp');
+    const path = require('path');
+    const fs = require('fs');
+
+    let baseBuffer = null;
+    const Product = require('../models/Product');
+    const mongoose = require('mongoose');
+
+    if (productId && mongoose.Types.ObjectId.isValid(productId)) {
+      const prod = await Product.findById(productId);
+      if (prod && prod.images && prod.images.length > 0) {
+        const rawImg = prod.images[0];
+        try {
+          if (rawImg.startsWith('http://') || rawImg.startsWith('https://')) {
+            const resp = await fetch(rawImg);
+            baseBuffer = Buffer.from(await resp.arrayBuffer());
+          } else if (rawImg.startsWith('/Photos/') || rawImg.startsWith('Photos/')) {
+            const clean = rawImg.replace(/^\/?Photos\//, '');
+            const candidates = [
+              path.join(__dirname, '../../frontend/public/Photos', clean),
+              path.join(__dirname, '../../frontend/Photos', clean),
+              path.join(process.cwd(), 'frontend/public/Photos', clean),
+              path.join(process.cwd(), 'Photos', clean),
+            ];
+            for (const c of candidates) {
+              if (fs.existsSync(c)) { baseBuffer = fs.readFileSync(c); break; }
+            }
+          }
+        } catch (_) {}
+      }
+    }
+
+    if (!baseBuffer && referenceImages && referenceImages.length > 0) {
+      try {
+        const ref = referenceImages[0];
+        if (ref.startsWith('http://') || ref.startsWith('https://')) {
+          const resp = await fetch(ref);
+          baseBuffer = Buffer.from(await resp.arrayBuffer());
+        } else if (ref.startsWith('/uploads/')) {
+          const p = path.join(__dirname, '..', ref);
+          if (fs.existsSync(p)) baseBuffer = fs.readFileSync(p);
+        }
+      } catch (_) {}
+    }
+
+    if (!baseBuffer) {
+      baseBuffer = await sharp({
+        create: { width: 768, height: 1024, channels: 3, background: { r: 245, g: 240, b: 235 } }
+      }).jpeg().toBuffer();
+    }
+
+    const metadata = await sharp(baseBuffer).metadata();
+    const width = metadata.width || 768;
+    const height = metadata.height || 1024;
+
+    const compositeLayers = [];
+
+    if (selectedRegions.includes('neckline') || selectedRegions.includes('collar')) {
+      const neckSvg = `
+        <svg width="${width}" height="${height}">
+          <defs>
+            <linearGradient id="goldShine" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#C5A059" stop-opacity="0.95" />
+              <stop offset="50%" stop-color="#FFE8A3" stop-opacity="0.9" />
+              <stop offset="100%" stop-color="#997736" stop-opacity="0.95" />
+            </linearGradient>
+          </defs>
+          <path d="M ${width * 0.36} ${height * 0.20} Q ${width * 0.50} ${height * 0.36} ${width * 0.64} ${height * 0.20}" 
+                stroke="url(#goldShine)" stroke-width="${Math.round(width * 0.025)}" fill="none" stroke-linecap="round" />
+          <path d="M ${width * 0.40} ${height * 0.22} Q ${width * 0.50} ${height * 0.32} ${width * 0.60} ${height * 0.22}" 
+                stroke="#FFFFFF" stroke-width="${Math.round(width * 0.008)}" stroke-dasharray="4,6" fill="none" opacity="0.8" />
+        </svg>
+      `;
+      compositeLayers.push({ input: Buffer.from(neckSvg), top: 0, left: 0 });
+    }
+
+    if (selectedRegions.includes('sleeves') || selectedRegions.includes('cuffs')) {
+      const sleeveSvg = `
+        <svg width="${width}" height="${height}">
+          <rect x="${width * 0.05}" y="${height * 0.42}" width="${width * 0.18}" height="${height * 0.04}" rx="4" fill="#C5A059" fill-opacity="0.88" />
+          <rect x="${width * 0.77}" y="${height * 0.42}" width="${width * 0.18}" height="${height * 0.04}" rx="4" fill="#C5A059" fill-opacity="0.88" />
+        </svg>
+      `;
+      compositeLayers.push({ input: Buffer.from(sleeveSvg), top: 0, left: 0 });
+    }
+
+    if (selectedRegions.includes('hemline')) {
+      const hemSvg = `
+        <svg width="${width}" height="${height}">
+          <rect x="${width * 0.16}" y="${height * 0.76}" width="${width * 0.68}" height="${height * 0.035}" rx="3" fill="#C5A059" fill-opacity="0.88" />
+          <line x1="${width * 0.16}" y1="${height * 0.80}" x2="${width * 0.84}" y2="${height * 0.80}" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="4,4" opacity="0.8" />
+        </svg>
+      `;
+      compositeLayers.push({ input: Buffer.from(hemSvg), top: 0, left: 0 });
+    }
+
+    if (selectedRegions.includes('embroidery')) {
+      const embSvg = `
+        <svg width="${width}" height="${height}">
+          <circle cx="${width * 0.5}" cy="${height * 0.44}" r="${width * 0.07}" fill="none" stroke="#C5A059" stroke-width="3" stroke-dasharray="6,4" opacity="0.85" />
+          <circle cx="${width * 0.5}" cy="${height * 0.44}" r="${width * 0.03}" fill="#C5A059" opacity="0.6" />
+        </svg>
+      `;
+      compositeLayers.push({ input: Buffer.from(embSvg), top: 0, left: 0 });
+    }
+
+    const badgeSvg = `
+      <svg width="${width}" height="${height}">
+        <rect x="${width - 200}" y="${height - 45}" width="190" height="35" rx="6" fill="#1A1A2E" fill-opacity="0.85" />
+        <text x="${width - 105}" y="${height - 23}" font-family="sans-serif" font-size="11" font-weight="bold" fill="#C5A059" text-anchor="middle">
+          ✨ BESPOKE AI PREVIEW
+        </text>
+      </svg>
+    `;
+    compositeLayers.push({ input: Buffer.from(badgeSvg), top: 0, left: 0 });
+
+    let modifiedBuffer = baseBuffer;
+    if (compositeLayers.length > 0) {
+      modifiedBuffer = await sharp(baseBuffer)
+        .composite(compositeLayers)
+        .webp({ quality: 90 })
+        .toBuffer();
+    }
+
+    const previewFilename = `preview_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.webp`;
+    const previewDir = path.join(__dirname, '../uploads/custom_previews');
+    if (!fs.existsSync(previewDir)) {
+      fs.mkdirSync(previewDir, { recursive: true });
+    }
+
+    const previewFilePath = path.join(previewDir, previewFilename);
+    fs.writeFileSync(previewFilePath, modifiedBuffer);
+
+    const previewUrl = `/uploads/custom_previews/${previewFilename}`;
+
+    res.json({
+      success: true,
+      previewUrl,
+      regionsApplied: selectedRegions,
+      summary: `AI Customization preview generated for: ${selectedRegions.join(', ')}.`
+    });
+  } catch (error) {
+    console.error('Customization Preview Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to generate customization preview', error: error.message });
+  }
+};
+
 module.exports = {
   createCustomizationRequest,
+  generateCustomizationPreview,
   getAvailableRequests,
   submitBid,
   getBidsForRequest,

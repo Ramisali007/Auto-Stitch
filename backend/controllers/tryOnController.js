@@ -1,88 +1,32 @@
 /**
- * Virtual Try-On Controller (Production-Grade & Privacy-First)
- * Implements session creation, trusted product validation, asynchronous queuing,
- * IDOR ownership enforcement, and instant privacy purges.
+ * Virtual Try-On Controller (Production-Grade, AI-Powered, Privacy-First)
+ * Implements session creation, authoritative product resolution, rigorous image preprocessing,
+ * asynchronous queue handling, idempotency checks, multi-boutique isolation, and instant privacy purges.
  */
 
-const crypto = require('crypto');
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 const Product = require('../models/Product');
 const Boutique = require('../models/Boutique');
 const TryOnJob = require('../models/TryOnJob');
 const vtoQueue = require('../utils/vtoQueue');
+const vtoService = require('../vto/VirtualTryOnService');
 const {
-  validateAndSanitizeImage,
+  normalizeGarmentCategory,
+  preprocessPersonImage,
+  preprocessGarmentImage,
+  selectAuthoritativeGarmentImage,
+  parseToBuffer,
+} = require('../vto/imagePipeline');
+const {
   uploadTempVtoAsset,
   deleteVtoAsset,
   purgeJobAssets,
 } = require('../utils/s3Service');
-const LocalSharpAdapter = require('../vto/LocalSharpAdapter');
-const FashnVtonAdapter = require('../vto/FashnVtonAdapter');
-const IdmVtonAdapter = require('../vto/IdmVtonAdapter');
-const ReplicateAdapter = require('../vto/ReplicateAdapter');
-
-const localEngine = new LocalSharpAdapter();
-const fashnEngine = new FashnVtonAdapter();
-const idmEngine = new IdmVtonAdapter();
-const replicateEngine = new ReplicateAdapter();
 
 /**
- * Helper to fetch garment image buffer safely from local or remote path
- */
-const fetchGarmentBuffer = async (garmentPath) => {
-  if (!garmentPath) throw new Error('Garment path missing');
-
-  if (Buffer.isBuffer(garmentPath)) return garmentPath;
-
-  if (typeof garmentPath === 'string') {
-    if (garmentPath.startsWith('data:image') || garmentPath.startsWith('data:application')) {
-      const base64Data = garmentPath.replace(/^data:.*?base64,/, '');
-      return Buffer.from(base64Data, 'base64');
-    }
-    if (fs.existsSync(garmentPath)) {
-      return fs.readFileSync(garmentPath);
-    }
-    if (garmentPath.startsWith('/Photos/') || garmentPath.startsWith('Photos/')) {
-      const clean = garmentPath.replace(/^\/?Photos\//, '');
-      const candidates = [
-        path.join(__dirname, '../../frontend/public/Photos', clean),
-        path.join(__dirname, '../../frontend/Photos', clean),
-        path.join(process.cwd(), 'frontend/public/Photos', clean),
-        path.join(process.cwd(), 'frontend/Photos', clean),
-        path.join(process.cwd(), '../frontend/Photos', clean),
-        path.join(process.cwd(), 'Photos', clean),
-      ];
-      for (const p of candidates) {
-        if (fs.existsSync(p)) return fs.readFileSync(p);
-      }
-    }
-    if (garmentPath.startsWith('/uploads/') || garmentPath.startsWith('uploads/')) {
-      const clean = garmentPath.replace(/^\/?uploads\//, '');
-      const candidates = [
-        path.join(__dirname, '../uploads', clean),
-        path.join(process.cwd(), 'backend/uploads', clean),
-        path.join(process.cwd(), 'uploads', clean),
-      ];
-      for (const p of candidates) {
-        if (fs.existsSync(p)) return fs.readFileSync(p);
-      }
-    }
-    if (garmentPath.startsWith('http://') || garmentPath.startsWith('https://')) {
-      const res = await fetch(garmentPath);
-      if (!res.ok) throw new Error(`Failed to fetch garment image from URL: ${res.status}`);
-      const arrayBuf = await res.arrayBuffer();
-      return Buffer.from(arrayBuf);
-    }
-    if (/^[A-Za-z0-9+/=]+$/.test(garmentPath.trim()) && garmentPath.length > 100) {
-      return Buffer.from(garmentPath.trim(), 'base64');
-    }
-  }
-  throw new Error(`Garment image source not found: ${garmentPath}`);
-};
-
-/**
- * @desc    Start VTO Session & Verify Product Binding
+ * @desc    Start VTO Session & Verify Product Binding & Category Support
  * @route   POST /api/vto/session
  * @access  Public / Optional Auth
  */
@@ -94,9 +38,20 @@ const createSession = async (req, res) => {
       return res.status(400).json({ success: false, message: 'productId is required to start a try-on session' });
     }
 
+    // Authoritative Product Resolution
     const product = await Product.findById(productId).populate('boutique', 'name isApproved').lean();
     if (!product || !product.isActive) {
       return res.status(404).json({ success: false, message: 'Selected garment product not found or inactive' });
+    }
+
+    // Category Taxonomy & Support Verification
+    const categoryInfo = normalizeGarmentCategory(product);
+    if (!categoryInfo.isSupported) {
+      return res.status(400).json({
+        success: false,
+        code: 'UNSUPPORTED_CATEGORY',
+        message: categoryInfo.reason || 'This garment category is not supported for Virtual Try-On.',
+      });
     }
 
     const assignedBoutiqueId = product.boutique?._id || boutiqueId;
@@ -110,23 +65,22 @@ const createSession = async (req, res) => {
       product: product._id,
       boutique: assignedBoutiqueId,
       status: 'pending',
-      category: product.category?.toLowerCase().includes('bottom')
-        ? 'bottoms'
-        : product.category?.toLowerCase().includes('top')
-        ? 'tops'
-        : 'dresses',
+      category: categoryInfo.category,
       expiresAt: new Date(Date.now() + 3600 * 1000), // 1 hour TTL
     });
+
+    const primaryImage = selectAuthoritativeGarmentImage(product);
 
     res.status(201).json({
       success: true,
       jobId: job.jobId,
       sessionToken,
+      category: categoryInfo.category,
       product: {
         id: product._id,
         name: product.name,
         category: product.category,
-        image: product.images?.[0] || '',
+        image: primaryImage,
         boutique: product.boutique?.name || 'Partner Boutique',
       },
     });
@@ -162,35 +116,82 @@ const createJob = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized to submit to this try-on job' });
     }
 
-    // Step 1: Sanitize Customer Image & Strip EXIF Metadata
+    // Step 1: Preprocess & Validate Customer Image
     let sanitizedPerson;
     try {
-      sanitizedPerson = await validateAndSanitizeImage(userPhoto);
+      sanitizedPerson = await preprocessPersonImage(userPhoto);
     } catch (valErr) {
-      return res.status(400).json({ success: false, message: valErr.message });
+      return res.status(400).json({
+        success: false,
+        code: valErr.code || 'INVALID_PERSON_IMAGE',
+        message: valErr.message,
+      });
     }
 
-    // Step 2: Upload Temporary Private Asset
+    // Step 2: Resolve Authoritative Garment Buffer
+    const garmentSrc = selectAuthoritativeGarmentImage(job.product);
+    let sanitizedGarment;
+    try {
+      sanitizedGarment = await preprocessGarmentImage(garmentSrc, job.product);
+    } catch (gErr) {
+      return res.status(400).json({
+        success: false,
+        code: gErr.code || 'INVALID_GARMENT_IMAGE',
+        message: gErr.message,
+      });
+    }
+
+    // Step 3: Idempotency & Duplicate Prevention
+    const imageHash = crypto.createHash('sha256').update(sanitizedPerson.buffer).digest('hex').slice(0, 16);
+    const resolvedIdempotency = idempotencyKey || `${job.product._id}_${imageHash}`;
+
+    // Check if an existing completed job matches this exact photo and product in last 15 minutes
+    const recentJob = await TryOnJob.findOne({
+      product: job.product._id,
+      idempotencyKey: resolvedIdempotency,
+      status: 'completed',
+      createdAt: { $gte: new Date(Date.now() - 15 * 60 * 1000) },
+    });
+
+    if (recentJob && recentJob.resultUrl) {
+      console.log(`[VTO Controller] Idempotent hit: Reusing result from Job ${recentJob.jobId}`);
+      job.status = 'completed';
+      job.resultUrl = recentJob.resultUrl;
+      job.modelVersion = recentJob.modelVersion;
+      job.completedAt = new Date();
+      await job.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Reused cached high-fidelity try-on result.',
+        jobId: job.jobId,
+        status: 'completed',
+        resultUrl: job.resultUrl,
+      });
+    }
+
+    // Step 4: Upload Temporary Private Asset
     const savedPerson = await uploadTempVtoAsset(job.jobId, 'person', sanitizedPerson.buffer);
     job.personObjectKey = savedPerson.objectKey;
     job.status = 'pending';
-    job.idempotencyKey = idempotencyKey || null;
+    job.idempotencyKey = resolvedIdempotency;
     await job.save();
 
-    // Step 3: Fetch Trusted Garment Image from Database Record
-    const garmentImageSrc = job.product?.images?.[0] || '';
-    const garmentBuffer = await fetchGarmentBuffer(garmentImageSrc);
-
-    // Step 4: Enqueue into Async Queue
-    await vtoQueue.enqueue(job.jobId, sanitizedPerson.buffer, garmentBuffer, {
+    // Step 5: Enqueue into Async Queue
+    await vtoQueue.enqueue(job.jobId, sanitizedPerson.buffer, sanitizedGarment.buffer, {
       category: job.category,
-      garmentName: job.product?.name || 'Garment',
+      garmentName: job.product?.name || 'Luxury Garment',
       fitStyle,
+      metadata: {
+        boutiqueId: job.boutique,
+        productId: job.product._id,
+        userId: job.user,
+      },
     });
 
     res.status(202).json({
       success: true,
-      message: 'Photo accepted & Virtual Try-On queued for generation.',
+      message: 'Photo verified. AI Virtual Try-On queued for neural generation.',
       jobId: job.jobId,
       status: 'pending',
     });
@@ -210,7 +211,7 @@ const getJobStatus = async (req, res) => {
     const { jobId } = req.params;
     const sessionToken = req.headers['x-vto-session'];
 
-    const job = await TryOnJob.findOne({ jobId }).populate('product', 'name images price');
+    const job = await TryOnJob.findOne({ jobId }).populate('product', 'name images price category');
     if (!job) {
       return res.status(404).json({ success: false, message: 'Job not found or expired' });
     }
@@ -295,13 +296,13 @@ const getTryOnCatalog = async (req, res) => {
 };
 
 /**
- * @desc    Instant Synchronous Try-On Processing (Backward Compatibility)
+ * @desc    Direct Try-On Processing via Active AI Provider
  * @route   POST /api/vto/process
  * @access  Public
  */
 const processTryOn = async (req, res) => {
   try {
-    const { userPhoto, garmentImage, garmentName, category, fitStyle = 'Tailored' } = req.body;
+    const { userPhoto, garmentImage, garmentName, category = 'tops', fitStyle = 'Tailored' } = req.body;
 
     if (!userPhoto || !garmentImage) {
       return res.status(400).json({
@@ -310,66 +311,115 @@ const processTryOn = async (req, res) => {
       });
     }
 
-    // Sanitize user photo and strip EXIF
-    const sanitizedPerson = await validateAndSanitizeImage(userPhoto);
-    const garmentBuffer = await fetchGarmentBuffer(garmentImage);
+    const sanitizedPerson = await preprocessPersonImage(userPhoto);
+    const sanitizedGarment = await preprocessGarmentImage(garmentImage);
 
     const tempJobId = `sync_${Date.now()}`;
-    let resultBuffer = null;
+    const categoryInfo = normalizeGarmentCategory(category);
 
-    // 1. Try Replicate Cloud GPU (IDM-VTON) if configured
-    if (process.env.REPLICATE_API_TOKEN) {
-      try {
-        resultBuffer = await replicateEngine.generate(sanitizedPerson.buffer, garmentBuffer, {
-          category: category || 'dresses',
-          garmentName,
-          fitStyle,
-        });
-      } catch (repErr) {
-        console.warn('[VTO Process] Replicate notice:', repErr.message);
-      }
-    }
+    const result = await vtoService.execute({
+      personBuffer: sanitizedPerson.buffer,
+      garmentBuffer: sanitizedGarment.buffer,
+      category: categoryInfo.category,
+      garmentName: garmentName || 'Luxury Garment',
+      fitStyle,
+    });
 
-    // 2. Try Colab GPU (IDM-VTON) if configured
-    if (!resultBuffer && (process.env.VTON_SERVICE_URL || process.env.COLAB_TRYON_URL)) {
-      try {
-        resultBuffer = await idmEngine.generate(sanitizedPerson.buffer, garmentBuffer, {
-          category: category || 'dresses',
-          garmentName,
-          fitStyle,
-        });
-      } catch (gpuErr) {
-        console.warn('[VTO Process] GPU Colab notice:', gpuErr.message);
-      }
-    }
-
-    // 3. Fallback to Local Neural Compositor
-    if (!resultBuffer) {
-      resultBuffer = await localEngine.generate(sanitizedPerson.buffer, garmentBuffer, {
-        category: category || 'dresses',
-        garmentName,
-        fitStyle,
-      });
-    }
-
-    const savedResult = await uploadTempVtoAsset(tempJobId, 'result', resultBuffer);
+    const savedResult = await uploadTempVtoAsset(tempJobId, 'result', result.buffer);
 
     res.json({
       success: true,
-      message: 'Virtual Try-On generated with 100% pose & identity preservation',
+      message: `AI Virtual Try-On generated via ${result.provider}`,
       resultImage: savedResult.url,
-      humanImage: userPhoto,
-      garmentImage,
-      garmentName: garmentName || 'Garment',
-      category: category || 'Boutique',
+      provider: result.provider,
+      model: result.model,
+      category: categoryInfo.category,
       fitStyle,
     });
   } catch (error) {
-    console.error('Instant VTO Error:', error.message);
-    res.status(500).json({
+    console.error('[Instant VTO Error]:', error.message);
+    res.status(error.code === 'INVALID_PERSON_IMAGE' ? 400 : 500).json({
       success: false,
+      code: error.code || 'PROVIDER_GENERATION_FAILED',
       message: error.message || 'Failed to generate virtual try-on',
     });
+  }
+};
+
+/**
+ * @desc    Check VTO Provider Health & Readiness
+ * @route   GET /api/vto/health
+ * @access  Public
+ */
+const getProviderHealth = async (req, res) => {
+  try {
+    const health = await vtoService.getHealth();
+    res.json({ success: true, ...health });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * @desc    Stream Try-On Render as Direct Attachment (Bypasses browser inline rendering)
+ * @route   GET /api/vto/download
+ * @access  Public
+ */
+const downloadRender = async (req, res) => {
+  try {
+    const { url, filename = `auto-stitch-tryon-${Date.now()}.png`, jobId } = req.query;
+
+    let targetUrl = url;
+    if (jobId && !targetUrl) {
+      const job = await TryOnJob.findOne({ jobId });
+      if (job && job.resultUrl) {
+        targetUrl = job.resultUrl;
+      }
+    }
+
+    if (!targetUrl) {
+      return res.status(400).json({ success: false, message: 'Image URL or Job ID is required' });
+    }
+
+    const cleanFilename = (filename || 'auto-stitch-tryon.png').replace(/[^a-zA-Z0-9._-]/g, '_');
+
+    // 1. If it's a local file upload on disk
+    if (targetUrl.includes('/uploads/')) {
+      const subPath = targetUrl.split('/uploads/')[1];
+      const filePath = path.join(__dirname, '../uploads', subPath);
+      if (fs.existsSync(filePath)) {
+        res.setHeader('Content-Disposition', `attachment; filename="${cleanFilename}"`);
+        res.setHeader('Content-Type', 'image/png');
+        return res.sendFile(filePath);
+      }
+    }
+
+    // 2. If it's a base64 data URI
+    if (targetUrl.startsWith('data:image/')) {
+      const base64Data = targetUrl.replace(/^data:.*?base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+      res.setHeader('Content-Disposition', `attachment; filename="${cleanFilename}"`);
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Content-Length', buffer.length);
+      return res.send(buffer);
+    }
+
+    // 3. Remote URL (Cloudinary / S3 / external)
+    const response = await fetch(targetUrl);
+    if (!response.ok) {
+      return res.status(response.status).json({ success: false, message: 'Failed to fetch remote image' });
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    res.setHeader('Content-Disposition', `attachment; filename="${cleanFilename}"`);
+    res.setHeader('Content-Type', response.headers.get('content-type') || 'image/png');
+    res.setHeader('Content-Length', buffer.length);
+    res.send(buffer);
+  } catch (error) {
+    console.error('[Download Render Error]:', error.message);
+    res.status(500).json({ success: false, message: 'Failed to download image', error: error.message });
   }
 };
 
@@ -380,4 +430,6 @@ module.exports = {
   cancelJob,
   getTryOnCatalog,
   processTryOn,
+  getProviderHealth,
+  downloadRender,
 };

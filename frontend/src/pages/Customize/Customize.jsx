@@ -30,6 +30,8 @@ export default function Customize() {
   const [budget, setBudget] = useState('');
   const [refImages, setRefImages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [aiPreviewUrl, setAiPreviewUrl] = useState(null);
+  const [generatingPreview, setGeneratingPreview] = useState(false);
   
   const fileInputRef = useRef(null);
 
@@ -68,6 +70,27 @@ export default function Customize() {
     setRefImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleGeneratePreview = async () => {
+    setGeneratingPreview(true);
+    setStep(3);
+    try {
+      const sampleRefs = refImages.map(img => img.preview);
+      const res = await axios.post(`${API_URL}/api/bids/preview`, {
+        productId,
+        selectedRegions,
+        referenceImages: sampleRefs,
+        description
+      }, { withCredentials: true });
+      if (res.data.success && res.data.previewUrl) {
+        setAiPreviewUrl(res.data.previewUrl);
+      }
+    } catch (err) {
+      console.warn('AI preview generation notice:', err.message);
+    } finally {
+      setGeneratingPreview(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!budget || isNaN(Number(budget)) || Number(budget) <= 0) {
       alert('Please enter a valid budget.');
@@ -91,13 +114,14 @@ export default function Customize() {
         uploadedUrls = uploadRes.data.urls;
       }
 
-      // 2. Save Request with actual DB URLs
+      // 2. Save Request with actual DB URLs and AI preview
       const response = await axios.post(`${API_URL}/api/bids/request`, {
         productId,
         selectedRegions,
         description,
         budget: Number(budget),
-        referenceImages: uploadedUrls
+        referenceImages: uploadedUrls,
+        previewImage: aiPreviewUrl || ''
       }, { withCredentials: true });
 
       if (response.data.success) {
@@ -268,25 +292,60 @@ export default function Customize() {
                   <button 
                     className="btn-black" 
                     style={{ flex: 2 }}
-                    disabled={!description || refImages.length === 0 || !budget}
-                    onClick={() => setStep(3)}
+                    disabled={!description || refImages.length === 0 || !budget || generatingPreview}
+                    onClick={handleGeneratePreview}
                   >
-                    PREVIEW REQUEST
+                    {generatingPreview ? 'GENERATING AI PREVIEW...' : 'GENERATE AI PREVIEW'}
                   </button>
                 </div>
               </div>
             )}
 
-            {/* STEP 3: REVIEW */}
+            {/* STEP 3: REVIEW & AI PREVIEW (SIDE-BY-SIDE) */}
             {step === 3 && (
               <div className="step-content-v2">
                 <div className="review-v2-card">
                   <div className="review-v2-header">
                     <div className="success-badge">
                       <CheckCircle size={16} />
-                      <span>Ready to Broadcast</span>
+                      <span>AI Preview Generated</span>
                     </div>
-                    <h2>Review Your Request</h2>
+                    <h2>Review & AI Customization Preview</h2>
+                  </div>
+
+                  {/* Side-by-Side Garment Preview Comparison */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                    <div style={{ background: '#f8f9fb', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e1e4e8', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, color: '#888', display: 'block', marginBottom: '0.75rem' }}>
+                        Original Base Design
+                      </span>
+                      <img 
+                        src={productImage || refImages[0]?.preview || 'https://picsum.photos/seed/curated/600/800'} 
+                        alt="Original Reference" 
+                        style={{ width: '100%', height: '320px', objectFit: 'cover', borderRadius: '8px' }} 
+                      />
+                    </div>
+
+                    <div style={{ background: '#f8f9fb', padding: '1.25rem', borderRadius: '12px', border: '2px solid #c5a059', textAlign: 'center', position: 'relative' }}>
+                      <div style={{ position: 'absolute', top: '12px', right: '12px', background: '#1a1a2e', color: '#c5a059', padding: '4px 10px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Sparkles size={12} /> AI Tailored Preview
+                      </div>
+                      <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, color: '#c5a059', display: 'block', marginBottom: '0.75rem' }}>
+                        Modified Regions Preview
+                      </span>
+                      {generatingPreview ? (
+                        <div style={{ height: '320px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', color: '#888' }}>
+                          <Sparkles size={32} color="#c5a059" />
+                          <p style={{ fontSize: '0.85rem' }}>Synthesizing regional modifications...</p>
+                        </div>
+                      ) : (
+                        <img 
+                          src={aiPreviewUrl ? `${API_URL}${aiPreviewUrl}` : (refImages[0]?.preview || productImage || 'https://picsum.photos/seed/curated/600/800')} 
+                          alt="AI Customized Preview" 
+                          style={{ width: '100%', height: '320px', objectFit: 'cover', borderRadius: '8px' }} 
+                        />
+                      )}
+                    </div>
                   </div>
 
                   <div className="review-v2-grid">
@@ -297,15 +356,15 @@ export default function Customize() {
                       </div>
                     </div>
                     <div className="review-item">
-                      <label>Budget</label>
-                      <span className="review-value">PKR {budget}</span>
+                      <label>Customer Budget</label>
+                      <span className="review-value">PKR {Number(budget)?.toLocaleString()}</span>
                     </div>
                     <div className="review-item" style={{ gridColumn: 'span 2' }}>
-                      <label>Description</label>
+                      <label>Custom Stitching Instructions</label>
                       <p className="review-desc">{description}</p>
                     </div>
                     <div className="review-item" style={{ gridColumn: 'span 2' }}>
-                      <label>References</label>
+                      <label>Uploaded Reference Photos</label>
                       <div className="review-refs">
                         {refImages.map((img, i) => (
                           <img key={i} src={img.preview} alt="" className="review-img" />
@@ -322,7 +381,7 @@ export default function Customize() {
                   <button 
                     className="btn-black" 
                     style={{ flex: 2 }}
-                    disabled={loading}
+                    disabled={loading || generatingPreview}
                     onClick={handleSubmit}
                   >
                     {loading ? 'BROADCASTING...' : 'BROADCAST TO BOUTIQUES'}

@@ -114,7 +114,13 @@ const seedData = async () => {
       '/Photos/elan/pexels-dhanno-19221260.jpg', '/Photos/elan/pexels-dhanno-19248024.jpg',
       '/Photos/elan/pexels-dhanno-19281279.jpg', '/Photos/elan/pexels-dhanno-19401634.jpg',
       '/Photos/elan/pexels-dhanno-19733567.jpg', '/Photos/elan/pexels-dhanno-19956008.jpg',
-      '/Photos/elan/pexels-dhanno-20420559.jpg', '/Photos/elan/pexels-dhanno-20527761.jpg'
+      '/Photos/elan/pexels-dhanno-20420559.jpg', '/Photos/elan/pexels-dhanno-20527761.jpg',
+      '/Photos/elan/engin-akyurt-qSA-x_pTHqQ-unsplash.jpg',
+      '/Photos/elan/imana-cI2zqKL-8ro-unsplash.jpg',
+      '/Photos/elan/khaled-ali-1-Sk6l2lCWY-unsplash.jpg',
+      '/Photos/elan/khaled-ghareeb--NyPn9up_7o-unsplash.jpg',
+      '/Photos/elan/manito-silk-xnE9M8Kq-e0-unsplash.jpg',
+      '/Photos/elan/max-titov-Mhktr6dFD3I-unsplash.jpg',
     ];
 
     for (const d of DESIGNERS) {

@@ -26,6 +26,12 @@ import elan9 from '../../Photos/elan/pexels-dhanno-19733567.jpg';
 import elan10 from '../../Photos/elan/pexels-dhanno-19956008.jpg';
 import elan11 from '../../Photos/elan/pexels-dhanno-20420559.jpg';
 import elan12 from '../../Photos/elan/pexels-dhanno-20527761.jpg';
+import elan13 from '../../Photos/elan/engin-akyurt-qSA-x_pTHqQ-unsplash.jpg';
+import elan14 from '../../Photos/elan/imana-cI2zqKL-8ro-unsplash.jpg';
+import elan15 from '../../Photos/elan/khaled-ali-1-Sk6l2lCWY-unsplash.jpg';
+import elan16 from '../../Photos/elan/khaled-ghareeb--NyPn9up_7o-unsplash.jpg';
+import elan17 from '../../Photos/elan/manito-silk-xnE9M8Kq-e0-unsplash.jpg';
+import elan18 from '../../Photos/elan/max-titov-Mhktr6dFD3I-unsplash.jpg';
 
 export const EDITORIAL_PRODUCTS = [
     { _id: 'e1', name: 'Velvet Midnight Gown', price: 85000, images: [elan1], boutique: 'Élan', category: 'Luxury Pret' },
@@ -39,5 +45,11 @@ export const EDITORIAL_PRODUCTS = [
     { _id: 'e9', name: 'Emerald Royale Set', price: 88000, images: [elan9], boutique: 'Élan', category: 'Luxury Pret' },
     { _id: 'e10', name: 'Rose Petal Pishwas', price: 135000, images: [elan10], boutique: 'Élan', category: 'Bridal' },
     { _id: 'e11', name: 'Sapphire Mist Wrap', price: 42000, images: [elan11], boutique: 'Élan', category: 'Formal' },
-    { _id: 'e12', name: 'Moonlit Silver Gown', price: 155000, images: [elan12], boutique: 'Élan', category: 'Bridal' }
+    { _id: 'e12', name: 'Moonlit Silver Gown', price: 155000, images: [elan12], boutique: 'Élan', category: 'Bridal' },
+    { _id: 'e13', name: 'Ivory Linen Tunic Dress', price: 18500, images: [elan13], boutique: 'Élan', category: 'Luxury Pret' },
+    { _id: 'e14', name: 'Botanical Flora Turquoise Co-Ord', price: 32000, images: [elan14], boutique: 'Élan', category: 'Luxury Pret' },
+    { _id: 'e15', name: 'Minimalist Ivory Longline Blazer Suit', price: 36000, images: [elan15], boutique: 'Élan', category: 'Formal' },
+    { _id: 'e16', name: 'Burgundy Rose Tulle Couture Gown', price: 85000, images: [elan16], boutique: 'Élan', category: 'Bridal' },
+    { _id: 'e17', name: 'Velvet Scalloped Collar Jacket', price: 24500, images: [elan17], boutique: 'Élan', category: 'Tops' },
+    { _id: 'e18', name: 'Geometric Color-Blocked Wool Coat', price: 29500, images: [elan18], boutique: 'Élan', category: 'Outerwear' }
 ];

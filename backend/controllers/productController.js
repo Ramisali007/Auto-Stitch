@@ -41,15 +41,18 @@ const getProducts = async (req, res) => {
       if (minPrice) query.price.$gte = Number(minPrice);
       if (maxPrice) query.price.$lte = Number(maxPrice);
     }
-    if (search) {
+    const escapeRegex = (text = '') => text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+
+    if (search && search.trim()) {
+      const cleanSearch = escapeRegex(search.trim());
       // Find boutiques that match search
-      const matchingBoutiques = await Boutique.find({ name: { $regex: search, $options: 'i' } }).select('_id');
+      const matchingBoutiques = await Boutique.find({ name: { $regex: cleanSearch, $options: 'i' } }).select('_id');
       const boutiqueIds = matchingBoutiques.map(b => b._id);
 
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { tags: { $in: [new RegExp(search, 'i')] } },
+        { name: { $regex: cleanSearch, $options: 'i' } },
+        { description: { $regex: cleanSearch, $options: 'i' } },
+        { tags: { $in: [new RegExp(cleanSearch, 'i')] } },
         { boutique: { $in: boutiqueIds } }
       ];
     }
@@ -58,7 +61,8 @@ const getProducts = async (req, res) => {
     if (boutiqueId) {
       query.boutique = boutiqueId;
     } else if (boutique) {
-      const boutiqueDoc = await Boutique.findOne({ name: { $regex: new RegExp(`^${boutique}$`, 'i') } });
+      const cleanBoutique = escapeRegex(boutique.trim());
+      const boutiqueDoc = await Boutique.findOne({ name: { $regex: new RegExp(`^${cleanBoutique}$`, 'i') } });
       if (boutiqueDoc) {
         query.boutique = boutiqueDoc._id;
       } else {

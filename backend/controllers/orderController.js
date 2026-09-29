@@ -94,6 +94,35 @@ const createOrder = async (req, res) => {
 
     const { items, shippingAddress, paymentMethod, itemsTotal, shippingCost, discount, total, couponCode, notes } = parsed.data;
 
+    // Atomically reserve inventory for all items in order
+    const mongoose = require('mongoose');
+    const reservedItems = [];
+
+    for (const item of items) {
+      if (mongoose.Types.ObjectId.isValid(item.product)) {
+        const qty = Math.max(1, item.quantity || 1);
+        const updated = await Product.findOneAndUpdate(
+          { _id: item.product, stock: { $gte: qty } },
+          { $inc: { stock: -qty, soldCount: qty } },
+          { new: true }
+        );
+
+        if (!updated) {
+          // Rollback any items already reserved in this transaction
+          for (const resItem of reservedItems) {
+            await Product.findByIdAndUpdate(resItem.id, {
+              $inc: { stock: resItem.qty, soldCount: -resItem.qty }
+            });
+          }
+          return res.status(400).json({
+            success: false,
+            message: `"${item.name}" has insufficient stock or just sold out in the atelier.`
+          });
+        }
+        reservedItems.push({ id: item.product, qty });
+      }
+    }
+
     const order = await Order.create({
       customer: req.user._id,
       boutique: items[0].boutique || parsed.data.boutique,
@@ -111,22 +140,6 @@ const createOrder = async (req, res) => {
         enabled: paymentMethod === 'stripe_installment'
       }
     });
-
-    // Deduct stock & increment sold count for ordered products
-    try {
-      for (const item of items) {
-        if (item.product) {
-          await Product.findByIdAndUpdate(item.product, {
-            $inc: { 
-              stock: -Math.max(1, item.quantity || 1), 
-              soldCount: Math.max(1, item.quantity || 1) 
-            }
-          });
-        }
-      }
-    } catch (stockErr) {
-      console.warn('[Stock Management] Notice on inventory update:', stockErr.message);
-    }
 
     let stripeSessionUrl = null;
 
@@ -300,6 +313,24 @@ const cancelOrder = async (req, res) => {
     });
 
     await order.save();
+
+    // Restore atelier stock for cancelled items
+    const mongoose = require('mongoose');
+    if (order.items && Array.isArray(order.items)) {
+      for (const item of order.items) {
+        if (item.product && mongoose.Types.ObjectId.isValid(item.product)) {
+          const qty = Math.max(1, item.quantity || 1);
+          try {
+            await Product.findByIdAndUpdate(item.product, {
+              $inc: { stock: qty, soldCount: -qty }
+            });
+          } catch (restoralErr) {
+            console.warn('[Inventory Restoral] Notice on cancellation:', restoralErr.message);
+          }
+        }
+      }
+    }
+
     res.json({ success: true, message: 'Order cancelled successfully', order });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });

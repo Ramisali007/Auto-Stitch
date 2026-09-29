@@ -1,20 +1,12 @@
 /**
- * Asynchronous Virtual Try-On Queue Manager
- * Provides resilient FIFO queuing, concurrency control, bounded retries,
- * job timeout enforcement, and automatic privacy source cleanup.
+ * Production-Grade Asynchronous Virtual Try-On Queue Manager
+ * Provides FIFO queueing, concurrency control, bounded retries with exponential backoff,
+ * job timeout enforcement, structured error logging, and instant privacy asset purges.
  */
 
 const TryOnJob = require('../models/TryOnJob');
-const { deleteVtoAsset } = require('./s3Service');
-const LocalSharpAdapter = require('../vto/LocalSharpAdapter');
-const FashnVtonAdapter = require('../vto/FashnVtonAdapter');
-const IdmVtonAdapter = require('../vto/IdmVtonAdapter');
-const ReplicateAdapter = require('../vto/ReplicateAdapter');
-
-const localEngine = new LocalSharpAdapter();
-const fashnEngine = new FashnVtonAdapter();
-const idmEngine = new IdmVtonAdapter();
-const replicateEngine = new ReplicateAdapter();
+const { deleteVtoAsset, uploadTempVtoAsset } = require('./s3Service');
+const vtoService = require('../vto/VirtualTryOnService');
 
 class VtoQueueManager {
   constructor() {
@@ -49,10 +41,10 @@ class VtoQueueManager {
   }
 
   /**
-   * Cancel a job in queue or mark active job as cancelled
+   * Cancel a job in queue or active processing
    */
   async cancel(jobId) {
-    // 1. Remove from pending queue if not yet started
+    // 1. Remove from pending queue
     const queueIndex = this.queue.findIndex((t) => t.jobId === jobId);
     if (queueIndex !== -1) {
       this.queue.splice(queueIndex, 1);
@@ -65,13 +57,15 @@ class VtoQueueManager {
       job.deletedAt = new Date();
       await job.save();
 
-      // Immediately purge temporary person assets
+      // Immediately purge temporary customer assets
       if (job.personObjectKey) {
         await deleteVtoAsset(job.personObjectKey);
+        job.personObjectKey = '';
       }
       if (job.resultUrl) {
         await deleteVtoAsset(job.resultUrl);
       }
+      await job.save();
     }
 
     return true;
@@ -93,7 +87,7 @@ class VtoQueueManager {
     // Update job status to processing
     await TryOnJob.findOneAndUpdate(
       { jobId: task.jobId },
-      { status: 'processing' }
+      { status: 'processing', startedAt: new Date() }
     );
 
     this.executeTask(task).finally(() => {
@@ -103,57 +97,24 @@ class VtoQueueManager {
   }
 
   /**
-   * Execute inference through engine pipeline with fallback resilience
+   * Execute inference via VirtualTryOnService
    */
   async executeTask(task) {
-    const { jobId, personBuffer, garmentBuffer, options } = task;
+    const { jobId, personBuffer, garmentBuffer, options = {} } = task;
     const startTime = Date.now();
 
     try {
-      let outputBuffer = null;
-      let engineUsed = 'local-sharp-compositor';
-      // 1. Primary Cloud GPU: Replicate IDM-VTON (if configured & healthy)
-      if (process.env.REPLICATE_API_TOKEN) {
-        try {
-          outputBuffer = await replicateEngine.generate(personBuffer, garmentBuffer, options);
-          engineUsed = 'replicate-idm-vton';
-        } catch (repErr) {
-          console.warn(`[Queue] Replicate notice: ${repErr.message}. Trying secondary...`);
-        }
-      }
+      const result = await vtoService.execute({
+        personBuffer,
+        garmentBuffer,
+        category: options.category || 'tops',
+        garmentName: options.garmentName || 'Luxury Garment',
+        fitStyle: options.fitStyle || 'Tailored',
+        metadata: options.metadata || {},
+      });
 
-      // 2. Colab GPU: IDM-VTON
-      if (!outputBuffer && (process.env.VTON_SERVICE_URL || process.env.COLAB_TRYON_URL)) {
-        try {
-          outputBuffer = await idmEngine.generate(personBuffer, garmentBuffer, options);
-          engineUsed = 'idm-vton';
-        } catch (idmErr) {
-          console.warn(`[Queue] IDM-VTON notice: ${idmErr.message}. Trying local worker...`);
-        }
-      }
-
-      // 3. Local GPU Worker: FASHN VTON
-      if (!outputBuffer && process.env.VTO_WORKER_URL) {
-        try {
-          const health = await fashnEngine.healthCheck();
-          if (health.ready) {
-            outputBuffer = await fashnEngine.generate(personBuffer, garmentBuffer, options);
-            engineUsed = 'fashn-vton-1.5';
-          }
-        } catch (fashnErr) {
-          console.warn(`[Queue] FASHN VTON notice: ${fashnErr.message}. Falling back to local...`);
-        }
-      }
-
-      // 4. Fallback: Local Neural Cloth Transfer
-      if (!outputBuffer) {
-        outputBuffer = await localEngine.generate(personBuffer, garmentBuffer, options);
-        engineUsed = 'local-sharp-compositor';
-      }
-
-      // Save output result
-      const { uploadTempVtoAsset } = require('./s3Service');
-      const savedResult = await uploadTempVtoAsset(jobId, 'result', outputBuffer);
+      // Upload and store the result image securely
+      const savedResult = await uploadTempVtoAsset(jobId, 'result', result.buffer);
 
       // CRITICAL PRIVACY REQUIREMENT: Immediately delete the source customer image
       const job = await TryOnJob.findOne({ jobId });
@@ -162,43 +123,79 @@ class VtoQueueManager {
         job.personObjectKey = ''; // Clear source object reference
       }
 
-      // Update TryOnJob record
+      // Update TryOnJob to completed
       await TryOnJob.findOneAndUpdate(
         { jobId },
         {
           status: 'completed',
           resultObjectKey: savedResult.objectKey,
           resultUrl: savedResult.url,
-          modelVersion: engineUsed,
+          modelVersion: `${result.provider}/${result.model}`,
+          completedAt: new Date(),
           expiresAt: new Date(Date.now() + parseInt(process.env.VTO_RESULT_EXPIRY_SECONDS || '3600', 10) * 1000),
         }
       );
 
-      console.log(`[✅ VTO Queue] Job ${jobId} completed in ${Date.now() - startTime}ms using ${engineUsed}`);
+      console.log(`[✅ VTO Queue] Job ${jobId} completed in ${Date.now() - startTime}ms using ${result.provider}`);
     } catch (err) {
-      console.error(`[❌ VTO Queue] Job ${jobId} failed:`, err.message);
+      console.error(`[❌ VTO Queue] Job ${jobId} error:`, err.message);
 
-      if (task.retries < task.maxRetries) {
+      const isTransient = ['PROVIDER_TIMEOUT', 'PROVIDER_RATE_LIMIT', 'PROVIDER_UNAVAILABLE', 'ETIMEDOUT', 'ECONNRESET'].includes(err.code);
+
+      if (isTransient && task.retries < task.maxRetries) {
         task.retries += 1;
-        console.log(`[Queue] Retrying job ${jobId} (Attempt ${task.retries}/${task.maxRetries})...`);
-        this.queue.unshift(task);
+        const delay = Math.pow(2, task.retries) * 1000;
+        console.log(`[Queue] Transient error for job ${jobId}. Retrying in ${delay}ms (Attempt ${task.retries}/${task.maxRetries})...`);
+        setTimeout(() => {
+          this.queue.unshift(task);
+          this.processNext();
+        }, delay);
       } else {
+        const failureCode = err.code || 'PROVIDER_GENERATION_FAILED';
+        const errorDescription = this._humanizeError(err);
+
         await TryOnJob.findOneAndUpdate(
           { jobId },
           {
             status: 'failed',
-            failureCode: 'INFERENCE_ERROR',
-            errorDescription: 'Virtual Try-On generation could not be completed for this image. Please try another photo.',
+            failureCode,
+            errorDescription,
+            failedAt: new Date(),
             deletedAt: new Date(),
           }
         );
+
         // Clean source image on final failure
         const job = await TryOnJob.findOne({ jobId });
         if (job?.personObjectKey) {
           await deleteVtoAsset(job.personObjectKey);
+          job.personObjectKey = '';
+          await job.save();
         }
       }
     }
+  }
+
+  _humanizeError(err) {
+    if (err.code === 'INVALID_PERSON_IMAGE') {
+      return 'The uploaded photo could not be processed. Please upload a clear photo with good lighting.';
+    }
+    if (err.code === 'OVERSIZED_IMAGE') {
+      return 'The photo exceeds 10MB. Please upload a smaller image file.';
+    }
+    if (err.code === 'UNSUPPORTED_CATEGORY') {
+      return err.message || 'Virtual Try-On is not supported for this garment category yet.';
+    }
+    if (err.code === 'PROVIDER_AUTH_ERROR') {
+      return 'Virtual Try-On service credentials are not configured or expired. Please contact support.';
+    }
+    if (err.code === 'PROVIDER_RATE_LIMIT') {
+      return 'Try-On engine is currently experiencing high demand. Please try again in a few moments.';
+    }
+    if (err.code === 'PROVIDER_TIMEOUT') {
+      return 'Virtual Try-On generation timed out. Please try again or choose another garment.';
+    }
+    return err.message || 'Virtual Try-On generation could not be completed for this image. Please try another photo.';
   }
 }
 

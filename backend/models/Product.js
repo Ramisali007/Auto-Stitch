@@ -49,6 +49,7 @@ productSchema.index({ status: 1, isActive: 1 });
 productSchema.index({ boutique: 1, status: 1 });
 productSchema.index({ createdAt: -1 });
 productSchema.index({ category: 1 });
+productSchema.index({ name: 'text', description: 'text', tags: 'text' });
 
 
 // Update average rating on review change

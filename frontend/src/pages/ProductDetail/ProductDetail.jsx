@@ -14,6 +14,7 @@ import { useWishlist } from '../../context/WishlistContext';
 import { ProductDetailSkeleton } from '../../components/SkeletonLoader/SkeletonLoader';
 import API_URL from '../../config/api';
 import toast from 'react-hot-toast';
+import { downloadImageDirectly } from '../../utils/downloadHelper';
 
 // Import Elan Editorial Photos for fallback/curated display
 import elan1 from '../../../Photos/elan/pexels-dhanno-18862319.jpg';
@@ -243,9 +244,9 @@ export default function ProductDetail() {
 
       setTryOnStage('Fitting garment to silhouette...');
 
-      // 3. Poll for result
+      // 3. Poll for result (up to 150s for GPU inference)
       let attempts = 0;
-      const maxAttempts = 30;
+      const maxAttempts = 75;
       const pollInterval = setInterval(async () => {
         attempts++;
         try {
@@ -259,7 +260,7 @@ export default function ProductDetail() {
             setTryOnResult(statusRes.data.resultUrl);
             setTryOnLoading(false);
             setTryOnStage('');
-            toast.success('Virtual Try-On generated! Source photo purged from server.');
+            toast.success('Photorealistic Try-On generated! Source photo purged from server.');
           } else if (statusRes.data.status === 'failed') {
             clearInterval(pollInterval);
             setTryOnLoading(false);
@@ -278,7 +279,7 @@ export default function ProductDetail() {
           setTryOnStage('');
           toast.error('Try-on processing timed out. Please try again.');
         }
-      }, 1500);
+      }, 2000);
     } catch (err) {
       console.warn('VTO Asynchronous flow notice, attempting direct generation:', err.message);
       // Fallback direct endpoint
@@ -322,15 +323,22 @@ export default function ProductDetail() {
     toast.success('Temporary photo and preview deleted from server.');
   };
 
-  const handleDownloadResult = () => {
+  const handleDownloadResult = async () => {
     if (!tryOnResult) return;
-    const link = document.createElement('a');
-    link.href = tryOnResult;
-    link.download = `auto-stitch-tryon-${product?.name?.toLowerCase().replace(/\s+/g, '-') || 'garment'}.webp`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success('Try-on image saved to your device!');
+    const toastId = toast.loading('Saving try-on render to device...');
+    try {
+      const slug = product?.name?.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'garment';
+      const filename = `auto-stitch-tryon-${slug}-${Date.now()}.png`;
+      const success = await downloadImageDirectly(tryOnResult, filename);
+      if (success) {
+        toast.success('Try-on image saved directly to your device!', { id: toastId });
+      } else {
+        toast.error('Could not download automatically. Please right-click image to save.', { id: toastId });
+      }
+    } catch (err) {
+      console.error('[Download Result Error]:', err);
+      toast.error('Download failed. Please try again.', { id: toastId });
+    }
   };
 
   const handleReviewSubmit = async (e) => {
