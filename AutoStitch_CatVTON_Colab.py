@@ -13,6 +13,7 @@
 !pip install -q --upgrade pip
 !pip install -q diffusers accelerate einops huggingface_hub fastapi uvicorn python-multipart
 !pip install -q torchvision opencv-python pillow scipy
+!pip install -q fvcore iopath omegaconf av
 
 # Download Cloudflare tunnel binary (100% Free, zero-signup instant public HTTPS)
 !wget -q -nc https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -O /usr/local/bin/cloudflared
@@ -44,37 +45,47 @@ from PIL import Image, ImageFilter
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from huggingface_hub import snapshot_download
 
 # Add CatVTON repository to python path
 sys.path.append(os.path.abspath("CatVTON"))
+sys.path.append("/content/CatVTON")
 
 from model.pipeline import CatVTONPipeline
-from model.cloth_masker import AutoMasker
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.float16 if torch.cuda.is_available() else torch.float32
 
 print(f"🚀 Initializing CatVTON (ComfyUI Try-On Engine) on {device} ({dtype})...")
 
+repo_path = snapshot_download(repo_id="zhengchong/CatVTON")
+
 # 1. Load CatVTON Pipeline (Uses spatial concatenation to preserve 100% exact cloth pattern)
 pipeline = CatVTONPipeline(
     base_ckpt="booksforfun/diffusers-sdxl-inpaint" if "sdxl" in os.environ.get("CATVTON_MODEL", "") else "runwayml/stable-diffusion-inpainting",
-    attn_ckpt="zhengchong/CatVTON",
+    attn_ckpt=repo_path,
     attn_ckpt_version="mix",
     weight_dtype=dtype,
     device=device,
     skip_safety_check=True,
 )
 
-# 2. Load Auto-Masker for human anatomy & garment bounds
-mask_processor = AutoMasker(
-    densepose_path="zhengchong/DensePose",
-    schp_path="zhengchong/SCHP",
-    device=device,
-)
+# 2. Load Auto-Masker for human anatomy & garment bounds (with safe fallback)
+mask_processor = None
+try:
+    from model.cloth_masker import AutoMasker
+    mask_processor = AutoMasker(
+        densepose_ckpt=os.path.join(repo_path, "DensePose"),
+        schp_ckpt=os.path.join(repo_path, "SCHP"),
+        device=device,
+    )
+    print("✅ DensePose + SCHP AutoMasker successfully loaded!")
+except Exception as mask_init_err:
+    print(f"⚠️ [Masker Notice]: AutoMasker (DensePose/SCHP) unavailable ({mask_init_err}). Fallback to anatomical smart mask enabled.")
 
-print("✅ CatVTON Pipeline & Neural Masker successfully loaded into GPU memory!")
-print(f"⚡ GPU Free VRAM: {round(torch.cuda.mem_get_info()[0] / (1024**3), 2)} GB / 15.0 GB")
+free_gb = round(torch.cuda.mem_get_info()[0] / (1024**3), 2) if torch.cuda.is_available() else 0
+print("✅ CatVTON Pipeline successfully loaded into GPU memory!")
+print(f"⚡ GPU Free VRAM: {free_gb} GB / 15.0 GB")
 
 app = FastAPI(title="Auto-Stitch CatVTON Server (ComfyUI Standard)")
 
@@ -141,10 +152,15 @@ def handle_tryon(req: TryOnRequest):
 
         # 1. Generate precision anatomical mask
         print(f"📐 [CatVTON] Generating anatomical mask for target category: {target_cat}...")
-        try:
-            mask = mask_processor(person_img, target_cat)["mask"]
-        except Exception as mask_err:
-            print(f"⚠️ [Mask Fallback]: {mask_err}, using heuristic torso drape mask")
+        mask = None
+        if mask_processor is not None:
+            try:
+                mask = mask_processor(person_img, target_cat)["mask"]
+            except Exception as mask_err:
+                print(f"⚠️ [Mask Fallback]: {mask_err}, using heuristic drape mask")
+                mask = None
+
+        if mask is None:
             w, h = person_img.size
             mask = Image.new("L", (w, h), 0)
             from PIL import ImageDraw
@@ -189,16 +205,29 @@ def handle_tryon(req: TryOnRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 def start_tunnel():
+    log_file = "/content/tunnel.log"
+    if os.path.exists(log_file):
+        try:
+            os.remove(log_file)
+        except Exception:
+            pass
+
+    cmd = ["/usr/local/bin/cloudflared", "tunnel", "--url", "http://127.0.0.1:8000", "--logfile", log_file]
+    if not os.path.exists("/usr/local/bin/cloudflared"):
+        cmd[0] = "cloudflared"
+
     try:
-        cf = subprocess.Popen(["/usr/local/bin/cloudflared", "tunnel", "--url", "http://127.0.0.1:8000"], stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, text=True)
-        for _ in range(30):
-            line = cf.stderr.readline()
-            match = re.search(r'https://[a-zA-Z0-9-]+\\.trycloudflare\\.com', line)
-            if match:
-                return match.group(0)
-            time.sleep(0.2)
-    except Exception:
-        pass
+        subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        for _ in range(40):
+            time.sleep(0.5)
+            if os.path.exists(log_file):
+                with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                    m = re.search(r"https://[a-zA-Z0-9-]+\.trycloudflare\.com", content)
+                    if m:
+                        return m.group(0)
+    except Exception as e:
+        print(f"Tunnel launch exception: {e}")
     return None
 
 if __name__ == "__main__":
@@ -207,6 +236,11 @@ if __name__ == "__main__":
     print("🚀 Auto Stitch CatVTON Cloud Server LIVE (ComfyUI Architecture)!")
     if pub_url:
         print(f"🔥 Public API URL for .env: VTON_SERVICE_URL={pub_url}")
+    else:
+        print("⚠️ Could not automatically parse Cloudflare URL from log.")
+        if os.path.exists("/content/tunnel.log"):
+            with open("/content/tunnel.log", "r") as f:
+                print("Tunnel log output:\n", f.read()[-500:])
     print("=" * 70)
 
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
