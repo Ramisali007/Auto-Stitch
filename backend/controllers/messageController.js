@@ -30,6 +30,22 @@ const sendMessage = async (req, res) => {
     const receiverModel = receiver.role === 'customer' ? 'Customer' : 
                          receiver.role === 'boutique_owner' ? 'BoutiqueOwner' : 'Admin';
 
+    // Verify quotation authorization: only boutique owners or admins can issue quotations
+    if (quoteData?.isQuote) {
+      if (req.user.role !== 'boutique_owner' && req.user.role !== 'admin') {
+        return res.status(403).json({ success: false, message: 'Only boutique ateliers or administrators can issue price quotations' });
+      }
+      if (req.user.role === 'boutique_owner') {
+        const userBoutique = await Boutique.findOne({ owner: req.user._id });
+        if (!userBoutique) {
+          return res.status(403).json({ success: false, message: 'Boutique profile not found' });
+        }
+        if (boutiqueId && userBoutique._id.toString() !== boutiqueId.toString()) {
+          return res.status(403).json({ success: false, message: 'Not authorized to quote on behalf of another boutique' });
+        }
+      }
+    }
+
     const message = await Message.create({
       sender: req.user._id,
       senderModel,
@@ -87,6 +103,20 @@ const acceptQuote = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Quotation message not found' });
     }
 
+    if (!message.quoteData?.isQuote) {
+      return res.status(400).json({ success: false, message: 'This message does not contain a price quotation.' });
+    }
+
+    // Ensure only the recipient can accept the quotation
+    if (message.receiver.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized to accept this quotation.' });
+    }
+
+    // Ensure the sender cannot accept their own quotation
+    if (message.sender.toString() === req.user._id.toString()) {
+      return res.status(400).json({ success: false, message: 'Cannot accept your own quotation.' });
+    }
+
     if (message.quoteData?.isAccepted) {
       return res.status(400).json({ 
         success: false, 
@@ -97,15 +127,19 @@ const acceptQuote = async (req, res) => {
 
     const Order = require('../models/Order');
     const Product = require('../models/Product');
+    const mongoose = require('mongoose');
 
     let productId = message.quoteData?.productId;
+    if (productId && !mongoose.Types.ObjectId.isValid(productId)) {
+      productId = undefined;
+    }
     if (!productId) {
       const anyProduct = await Product.findOne({ boutique: message.boutique });
-      productId = anyProduct ? anyProduct._id : '69f5155aca01a992cebe9f58';
+      productId = anyProduct ? anyProduct._id : undefined;
     }
 
     const quoteTitle = message.quoteData?.title || 'Custom In-Chat Bespoke Request';
-    const quotePrice = Number(message.quoteData?.price || 15000);
+    const quotePrice = Math.max(1, Number(message.quoteData?.price || 15000));
     const quoteImage = message.quoteData?.image || message.attachment || '';
 
     // Create Order with exact image
@@ -113,7 +147,7 @@ const acceptQuote = async (req, res) => {
       customer: req.user._id,
       boutique: message.boutique,
       items: [{
-        product: productId,
+        ...(productId ? { product: productId } : {}),
         name: quoteTitle,
         image: quoteImage,
         price: quotePrice,
@@ -130,6 +164,7 @@ const acceptQuote = async (req, res) => {
       itemsTotal: quotePrice,
       shippingCost: 0,
       total: quotePrice,
+      isCustomOrder: true,
       notes: `Placed directly via in-chat quotation agreement. (${message.quoteData?.notes || ''})`,
       statusHistory: [{ status: 'placed', note: 'Order placed directly via accepted in-chat quotation' }]
     });

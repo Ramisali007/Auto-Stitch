@@ -206,21 +206,45 @@ Respond in STRICT JSON format:
   "selectedProductIds": ["id1", "id2"]
 }`;
 
-    const completion = await groq.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Style Request: ${query || occasion}. Budget: ${budget || 'Flexible'}` },
-      ],
-      response_format: { type: 'json_object' },
-    });
+    const candidateModels = [
+      'openai/gpt-oss-20b',
+      'openai/gpt-oss-120b',
+      'qwen/qwen3.8-27b',
+      'llama-3.1-8b-instant',
+    ];
+
+    let completion = null;
+    for (const modelName of candidateModels) {
+      try {
+        completion = await groq.chat.completions.create({
+          model: modelName,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: `Style Request: ${query || occasion}. Budget: ${budget || 'Flexible'}` },
+          ],
+          response_format: { type: 'json_object' },
+          max_tokens: 350,
+          temperature: 0.7,
+        });
+        if (completion?.choices?.[0]?.message?.content) break;
+      } catch (err) {
+        console.warn(`[Groq AI Stylist Model ${modelName} Notice]:`, err.message);
+      }
+    }
 
     let parsedResult = { advice: '', selectedProductIds: [] };
-    try {
-      parsedResult = JSON.parse(completion.choices[0].message.content);
-    } catch (_) {
+    if (completion?.choices?.[0]?.message?.content) {
+      try {
+        parsedResult = JSON.parse(completion.choices[0].message.content);
+      } catch (_) {
+        parsedResult = {
+          advice: 'Here are our top curated selections for your style requirement.',
+          selectedProductIds: availableProducts.slice(0, 4).map((p) => p._id.toString()),
+        };
+      }
+    } else {
       parsedResult = {
-        advice: 'Here are our top curated selections for your style requirement.',
+        advice: `Based on your request for "${query || occasion || 'Formal Occasion'}", we hand-selected these exquisite pieces matching your style criteria.`,
         selectedProductIds: availableProducts.slice(0, 4).map((p) => p._id.toString()),
       };
     }

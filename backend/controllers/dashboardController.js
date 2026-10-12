@@ -1,6 +1,7 @@
 const Order = require('../models/Order');
 const CustomizationRequest = require('../models/CustomizationRequest');
 const Product = require('../models/Product');
+const TryOnJob = require('../models/TryOnJob');
 
 // @desc    Get customer dashboard stats
 // @route   GET /api/dashboard/customer
@@ -27,7 +28,7 @@ const getCustomerStats = async (req, res) => {
       stats: {
         totalOrders,
         wishlistCount,
-        tryOnsUsed: await CustomizationRequest.countDocuments({ customer: req.user._id }),
+        tryOnsUsed: await TryOnJob.countDocuments({ user: req.user._id }),
         activeRequests
       },
       recentOrders
@@ -48,8 +49,33 @@ const getBoutiqueStats = async (req, res) => {
     }
 
     const totalProducts = await Product.countDocuments({ boutique: boutique._id });
-    const totalOrders = await Order.countDocuments({ boutique: boutique._id });
+    const totalOrders = await Order.countDocuments({
+      $or: [
+        { boutique: boutique._id },
+        { 'items.boutique': boutique._id }
+      ]
+    });
     const pendingBids = await require('../models/Bid').countDocuments({ boutique: boutique._id, status: 'pending' });
+
+    // Calculate actual revenue for this boutique's items across all orders
+    const boutiqueOrders = await Order.find({
+      $or: [
+        { boutique: boutique._id },
+        { 'items.boutique': boutique._id }
+      ],
+      $or: [{ paymentStatus: 'paid' }, { status: 'delivered' }]
+    }).lean();
+
+    let calculatedRevenue = 0;
+    for (const ord of boutiqueOrders) {
+      const itemsForBoutique = (ord.items || []).filter(
+        i => (i.boutique && i.boutique.toString() === boutique._id.toString()) ||
+             (!i.boutique && ord.boutique && ord.boutique.toString() === boutique._id.toString())
+      );
+      const itemsSum = itemsForBoutique.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+      const orderItemsTotal = ord.itemsTotal || 1;
+      calculatedRevenue += ord.total ? Math.round((itemsSum / orderItemsTotal) * ord.total) : itemsSum;
+    }
 
     res.json({
       success: true,
@@ -64,15 +90,7 @@ const getBoutiqueStats = async (req, res) => {
         totalProducts,
         totalOrders,
         pendingBids,
-        revenue: await Order.aggregate([
-          { 
-            $match: { 
-              boutique: boutique._id, 
-              $or: [{ paymentStatus: 'paid' }, { status: 'delivered' }] 
-            } 
-          },
-          { $group: { _id: null, total: { $sum: '$total' } } }
-        ]).then(r => r[0]?.total || 0)
+        revenue: calculatedRevenue
       }
     });
   } catch (error) {
@@ -91,17 +109,30 @@ const getBoutiquePayouts = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Boutique not found' });
     }
 
-    // Compute delivered / paid order revenue
-    const orders = await Order.find({ boutique: boutique._id }).lean();
+    // Compute delivered / paid order revenue for items belonging to this boutique
+    const orders = await Order.find({
+      $or: [
+        { boutique: boutique._id },
+        { 'items.boutique': boutique._id }
+      ]
+    }).lean();
     
     let grossEarnings = 0;
     let inProgressGross = 0;
 
     orders.forEach(order => {
+      const itemsForBoutique = (order.items || []).filter(
+        i => (i.boutique && i.boutique.toString() === boutique._id.toString()) ||
+             (!i.boutique && order.boutique && order.boutique.toString() === boutique._id.toString())
+      );
+      const itemsSum = itemsForBoutique.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+      const orderItemsTotal = order.itemsTotal || 1;
+      const boutiqueShare = order.total ? Math.round((itemsSum / orderItemsTotal) * order.total) : itemsSum;
+
       if (order.status === 'delivered' || order.paymentStatus === 'paid') {
-        grossEarnings += (order.total || 0);
+        grossEarnings += boutiqueShare;
       } else if (!['cancelled', 'refunded'].includes(order.status)) {
-        inProgressGross += (order.total || 0);
+        inProgressGross += boutiqueShare;
       }
     });
 

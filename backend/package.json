@@ -18,7 +18,6 @@
     "dependencies": {
         "@google/generative-ai": "^0.24.1",
         "@gradio/client": "^2.5.1",
-        "@imgly/background-removal-node": "^1.4.5",
         "bcryptjs": "^3.0.3",
         "cloudinary": "^1.41.3",
         "cookie-parser": "^1.4.7",

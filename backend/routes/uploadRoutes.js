@@ -4,33 +4,49 @@ const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const { protect } = require('../middleware/authMiddleware');
-
-// 1. Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
 const path = require('path');
 const fs = require('fs');
 
-// Ensure uploads directory exists
+// 1. Configure Cloudinary
+const useCloudinary = Boolean(
+  process.env.CLOUDINARY_CLOUD_NAME &&
+  process.env.CLOUDINARY_API_KEY &&
+  process.env.CLOUDINARY_API_SECRET
+);
+
+if (useCloudinary) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+}
+
+// Ensure local uploads directory exists as fallback
 const uploadDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// 2. Set up Local Storage Engine for Multer
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// 2. Set up Storage Engine (Cloudinary in Production / Ephemeral, Local Disk in offline/dev fallback)
+const storage = useCloudinary
+  ? new CloudinaryStorage({
+      cloudinary: cloudinary,
+      params: {
+        folder: 'auto-stitch',
+        allowed_formats: ['jpeg', 'jpg', 'png', 'webp', 'gif'],
+        public_id: (req, file) => `${Date.now()}-${Math.round(Math.random() * 1e9)}`
+      }
+    })
+  : multer.diskStorage({
+      destination: function (req, file, cb) {
+        cb(null, uploadDir);
+      },
+      filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+      }
+    });
 
 // File type filter
 const fileFilter = (req, file, cb) => {
@@ -87,17 +103,21 @@ const handleUploadArray = (req, res, next) => {
   });
 };
 
-// 3. Update endpoints to return the local URL
+// 3. Endpoints supporting Cloudinary CDN & Local URLs
 router.post('/', protect, handleUploadSingle, (req, res) => {
   if (!req.file) {
     return res.status(400).json({ success: false, message: 'No file uploaded' });
   }
   
   const serverUrl = `${req.protocol}://${req.get('host')}`;
+  const fileUrl = req.file.path?.startsWith('http')
+    ? req.file.path
+    : `${serverUrl}/uploads/${req.file.filename}`;
+
   res.json({
     success: true,
     message: 'Image uploaded successfully',
-    url: `${serverUrl}/uploads/${req.file.filename}`
+    url: fileUrl
   });
 });
 
@@ -107,7 +127,11 @@ router.post('/multi', protect, handleUploadArray, (req, res) => {
   }
   
   const serverUrl = `${req.protocol}://${req.get('host')}`;
-  const urls = req.files.map(file => `${serverUrl}/uploads/${file.filename}`);
+  const urls = req.files.map(file => {
+    return file.path?.startsWith('http')
+      ? file.path
+      : `${serverUrl}/uploads/${file.filename}`;
+  });
   
   res.json({
     success: true,

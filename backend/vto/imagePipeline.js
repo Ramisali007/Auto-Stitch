@@ -7,6 +7,7 @@
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
+const { isSafeRemoteUrl } = require('../utils/securityUtils');
 
 /**
  * Standard Garment Taxonomy Mapping
@@ -129,7 +130,14 @@ function normalizeGarmentCategory(productOrCategory) {
  * @returns {Promise<{ buffer: Buffer, width: number, height: number, format: string, mimeType: string }>}
  */
 async function preprocessPersonImage(inputBufferOrBase64) {
-  let buffer = parseToBuffer(inputBufferOrBase64);
+  let buffer;
+  try {
+    buffer = await resolveToBuffer(inputBufferOrBase64);
+  } catch (loadErr) {
+    const error = new Error(`Person image could not be loaded: ${loadErr.message}`);
+    error.code = 'INVALID_PERSON_IMAGE';
+    throw error;
+  }
 
   // 1. Minimum buffer length check
   if (!buffer || buffer.length < 64) {
@@ -224,7 +232,14 @@ async function preprocessPersonImage(inputBufferOrBase64) {
  * @returns {Promise<{ buffer: Buffer, width: number, height: number, format: string, mimeType: string }>}
  */
 async function preprocessGarmentImage(inputBufferOrPath, productMetadata = {}) {
-  let buffer = parseToBuffer(inputBufferOrPath);
+  let buffer;
+  try {
+    buffer = await resolveToBuffer(inputBufferOrPath);
+  } catch (loadErr) {
+    const error = new Error(`Garment image could not be loaded: ${loadErr.message}`);
+    error.code = 'INVALID_GARMENT_IMAGE';
+    throw error;
+  }
 
   if (!buffer || buffer.length < 512) {
     const error = new Error('Garment image is invalid or could not be loaded.');
@@ -339,6 +354,59 @@ function parseToBuffer(input) {
 }
 
 /**
+ * Asynchronous resolver that handles Buffer, Base64 data URL, local files,
+ * AND remote HTTP/HTTPS image URLs (e.g. Cloudinary, CDNs) with SSRF checks.
+ * @param {Buffer|string} input
+ * @returns {Promise<Buffer|null>}
+ */
+async function resolveToBuffer(input) {
+  if (Buffer.isBuffer(input)) return input;
+  if (!input || typeof input !== 'string') return null;
+
+  // 1. Check synchronous fast paths (base64, local files)
+  const syncBuffer = parseToBuffer(input);
+  if (syncBuffer) return syncBuffer;
+
+  // 2. Remote URL handling (Cloudinary, CDNs, Unsplash)
+  const trimmed = input.trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    if (!isSafeRemoteUrl(trimmed)) {
+      const err = new Error('Remote image URL is blocked for security reasons (SSRF protection).');
+      err.code = 'SSRF_BLOCKED';
+      throw err;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    try {
+      const response = await fetch(trimmed, {
+        signal: controller.signal,
+        headers: { 'User-Agent': 'AutoStitch-VTO/1.0 (image-pipeline)' },
+      });
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch remote image: HTTP ${response.status}`);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const fetchedBuffer = Buffer.from(arrayBuffer);
+
+      if (fetchedBuffer.length > 15 * 1024 * 1024) {
+        throw new Error('Remote image exceeds the 15MB size limit.');
+      }
+
+      return fetchedBuffer;
+    } catch (fetchErr) {
+      clearTimeout(timeout);
+      throw fetchErr;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Deterministic selection of the best product image for VTO
  * @param {Object} product
  * @returns {string} - Chosen image path or URL
@@ -365,4 +433,5 @@ module.exports = {
   preprocessGarmentImage,
   selectAuthoritativeGarmentImage,
   parseToBuffer,
+  resolveToBuffer,
 };

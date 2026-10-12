@@ -193,4 +193,50 @@ const getBoutiqueStatusTemplate = (name, status, reason = '') => {
   `;
 };
 
-module.exports = { getOrderConfirmationTemplate, getOrderStatusTemplate, getContactReplyTemplate, getWelcomeTemplate, getBoutiqueStatusTemplate };
+const getPasswordResetOtpTemplate = (name, otp, roleLabel = 'Account') => {
+  return `
+    <div style="font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
+      <div style="background: #1a1a2e; padding: 32px 24px; text-align: center; color: white;">
+        <h1 style="margin: 0; font-size: 26px; letter-spacing: 2px; font-weight: 700; color: #ffffff;">AUTO STITCH</h1>
+        <p style="margin: 8px 0 0 0; color: #c5a059; font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 500;">
+          ${roleLabel} Security Verification
+        </p>
+      </div>
+      <div style="padding: 36px 32px; text-align: center;">
+        <h2 style="color: #1a1a2e; font-size: 20px; margin-top: 0; font-weight: 600;">Password Reset Code</h2>
+        <p style="color: #4a5568; line-height: 1.6; font-size: 15px; margin-bottom: 24px;">
+          Hello ${name || 'Valued Member'},<br/>
+          We received a request to reset the security credentials for your AutoStitch ${roleLabel.toLowerCase()}. Please enter the following 6-digit one-time passcode to proceed:
+        </p>
+        
+        <div style="margin: 28px 0; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 20px; display: inline-block; min-width: 240px;">
+          <span style="color: #1a1a2e; font-size: 38px; font-weight: 700; letter-spacing: 12px; font-family: monospace; display: block; margin-left: 12px;">
+            ${otp}
+          </span>
+        </div>
+
+        <p style="color: #e53e3e; font-size: 13px; font-weight: 600; margin-top: 12px;">
+          ⏱ This passcode is strictly confidential and expires in 5 minutes.
+        </p>
+
+        <p style="color: #718096; font-size: 13px; line-height: 1.5; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 20px;">
+          If you did not initiate this password reset, no action is needed. Your existing password remains secure.
+        </p>
+      </div>
+      <div style="background: #f8fafc; padding: 16px; text-align: center; border-top: 1px solid #e2e8f0;">
+        <p style="color: #94a3b8; font-size: 11px; margin: 0;">
+          &copy; ${new Date().getFullYear()} Auto Stitch Marketplace. All rights reserved.
+        </p>
+      </div>
+    </div>
+  `;
+};
+
+module.exports = { 
+  getOrderConfirmationTemplate, 
+  getOrderStatusTemplate, 
+  getContactReplyTemplate, 
+  getWelcomeTemplate, 
+  getBoutiqueStatusTemplate,
+  getPasswordResetOtpTemplate
+};

@@ -129,8 +129,8 @@ Auto-Stitch/
 | Role | Access Route | Sample Credentials / Features |
 | :--- | :--- | :--- |
 | **Customer** | `/login` | Browse collections, add to bag, apply coupons, submit bids, track orders |
-| **Boutique Owner** | `/boutique/login` | Inventory management, order fulfillment, quote submission, KYC compliance |
-| **Administrator** | `/admin/login` | Platform analytics, boutique KYC approvals, payout disbursements, ticket moderation |
+| **Boutique Owner** | `/boutique-login` (or `/boutique/login`) | Inventory management, order fulfillment, quote submission, KYC compliance |
+| **Administrator** | `/admin-login` (or `/admin/login`) | Platform analytics, boutique KYC approvals, payout disbursements, ticket moderation |
 
 ---
 
@@ -159,7 +159,10 @@ NODE_ENV=development
 CLIENT_URL=http://localhost:5173
 MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/autostitch?retryWrites=true&w=majority
 JWT_SECRET=your_secure_jwt_secret_key
+JWT_REFRESH_SECRET=your_secure_jwt_refresh_secret
+JWT_2FA_SECRET=your_secure_2fa_secret
 STRIPE_SECRET_KEY=sk_test_your_stripe_key
+STRIPE_WEBHOOK_SECRET=whsec_your_stripe_webhook_secret
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
@@ -213,9 +216,9 @@ npm run dev
 * `PUT /api/products/:id` — Update listing details & stock (*Boutique only*)
 
 ### 📦 Orders & Tracking (`/api/orders`)
-* `POST /api/orders` — Create order, apply coupons & decrement stock
+* `POST /api/orders` — Create order, compute server-authoritative totals, apply coupons & decrement stock
 * `POST /api/orders/track` — On-screen live order tracking by 6-char Reference ID
-* `GET /api/orders/my-orders` — Customer order history & item status
+* `GET /api/orders` (alias: `GET /api/orders/my-orders`) — Customer order history & item status
 * `PATCH /api/orders/:id/status` — Progress order through tailoring stages (*Boutique/Admin*)
 
 ### 🎟️ Coupons & Discounts (`/api/coupons`)

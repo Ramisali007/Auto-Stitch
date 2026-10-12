@@ -2,6 +2,7 @@ const { Customer, BoutiqueOwner, Admin, User, getUserModel } = require('../model
 const Product = require('../models/Product');
 const Boutique = require('../models/Boutique');
 const Order = require('../models/Order');
+const Bid = require('../models/Bid');
 const sendEmail = require('../utils/sendEmail');
 const { getBoutiqueStatusTemplate } = require('../utils/emailTemplates');
 
@@ -250,6 +251,7 @@ const deleteUser = async (req, res) => {
       const boutique = await Boutique.findOne({ owner: user._id });
       if (boutique) {
         console.log(`[Admin Delete] Purging boutique profile: ${boutique.name}`);
+        await Bid.deleteMany({ boutique: boutique._id });
         await Product.deleteMany({ boutique: boutique._id });
         await Boutique.findByIdAndDelete(boutique._id);
       }

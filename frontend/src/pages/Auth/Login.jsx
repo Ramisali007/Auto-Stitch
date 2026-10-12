@@ -246,7 +246,7 @@ export default function Login({ onLogin }) {
                       {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
-                  <Link to="/forgot-password" name="forgot" className="forgot-pass-link">Forgot Password?</Link>
+                  <Link to="/forgot-password?portal=customer" name="forgot" className="forgot-pass-link">Forgot Password?</Link>
                 </div>
 
                 {import.meta.env.VITE_RECAPTCHA_SITE_KEY && (

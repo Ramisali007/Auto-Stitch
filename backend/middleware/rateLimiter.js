@@ -56,5 +56,8 @@ const trackOrderLimiter = rateLimit(15 * 60 * 1000, 5, 'Too many order tracking 
 // VTO limiter: 30 requests per 15 minutes
 const vtoLimiter = rateLimit(15 * 60 * 1000, 30, 'Too many Virtual Try-On requests, please try again after 15 minutes.');
 
-module.exports = { globalLimiter, authLimiter, chatbotLimiter, trackOrderLimiter, vtoLimiter };
+// OTP & Password reset limiter: 15 requests per 15 minutes per IP
+const otpLimiter = rateLimit(15 * 60 * 1000, 15, 'Too many password reset requests from this IP, please try again after 15 minutes.');
+
+module.exports = { globalLimiter, authLimiter, chatbotLimiter, trackOrderLimiter, vtoLimiter, otpLimiter };
 

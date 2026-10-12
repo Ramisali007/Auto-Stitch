@@ -24,6 +24,7 @@ const {
   deleteVtoAsset,
   purgeJobAssets,
 } = require('../utils/s3Service');
+const { resolveSafeFilePath, isSafeRemoteUrl } = require('../utils/securityUtils');
 
 /**
  * @desc    Start VTO Session & Verify Product Binding & Category Support
@@ -386,12 +387,13 @@ const downloadRender = async (req, res) => {
     // 1. If it's a local file upload on disk
     if (targetUrl.includes('/uploads/')) {
       const subPath = targetUrl.split('/uploads/')[1];
-      const filePath = path.join(__dirname, '../uploads', subPath);
-      if (fs.existsSync(filePath)) {
-        res.setHeader('Content-Disposition', `attachment; filename="${cleanFilename}"`);
-        res.setHeader('Content-Type', 'image/png');
-        return res.sendFile(filePath);
+      const safeFilePath = resolveSafeFilePath(path.join(__dirname, '../uploads'), subPath);
+      if (!safeFilePath || !fs.existsSync(safeFilePath)) {
+        return res.status(403).json({ success: false, message: 'Invalid or forbidden file path' });
       }
+      res.setHeader('Content-Disposition', `attachment; filename="${cleanFilename}"`);
+      res.setHeader('Content-Type', 'image/png');
+      return res.sendFile(safeFilePath);
     }
 
     // 2. If it's a base64 data URI
@@ -404,17 +406,26 @@ const downloadRender = async (req, res) => {
       return res.send(buffer);
     }
 
-    // 3. Remote URL (Cloudinary / S3 / external)
+    // 3. Remote URL (Cloudinary / S3 / external verified CDNs)
+    if (!isSafeRemoteUrl(targetUrl)) {
+      return res.status(400).json({ success: false, message: 'Untrusted or unsafe remote image URL' });
+    }
+
     const response = await fetch(targetUrl);
     if (!response.ok) {
       return res.status(response.status).json({ success: false, message: 'Failed to fetch remote image' });
+    }
+
+    const contentType = response.headers.get('content-type') || 'image/png';
+    if (!contentType.startsWith('image/')) {
+      return res.status(400).json({ success: false, message: 'Remote resource is not a valid image' });
     }
 
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
     res.setHeader('Content-Disposition', `attachment; filename="${cleanFilename}"`);
-    res.setHeader('Content-Type', response.headers.get('content-type') || 'image/png');
+    res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Length', buffer.length);
     res.send(buffer);
   } catch (error) {

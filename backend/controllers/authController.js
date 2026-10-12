@@ -6,7 +6,7 @@ const { User, Admin, BoutiqueOwner, Customer, getUserModel } = require('../model
 const Boutique = require('../models/Boutique');
 const { z } = require('zod');
 const sendEmail = require('../utils/sendEmail');
-const { getWelcomeTemplate } = require('../utils/emailTemplates');
+const { getWelcomeTemplate, getPasswordResetOtpTemplate } = require('../utils/emailTemplates');
 // ===== Zod Validation Schemas =====
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.(com|org|net|edu|gov|mil|co|info|io|pk|uk|us|ca|au)$/i;
 
@@ -27,16 +27,23 @@ const loginSchema = z.object({
   portal: z.enum(['customer', 'boutique', 'admin']).optional().default('customer'),
 });
 
-// Generate tokens
+// Secret for short-lived 2FA pre-authentication tokens
+const JWT_2FA_SECRET = process.env.JWT_2FA_SECRET || (process.env.JWT_SECRET + '_2fa_temp');
+
+// Generate tokens (15m access token, 7d refresh token)
 const generateTokens = (id, role) => {
-  const accessToken = jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  const accessToken = jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '15m' });
   const refreshToken = jwt.sign({ id, role }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
   return { accessToken, refreshToken };
 };
 
 // Set token cookies
-const sendTokenResponse = (user, statusCode, res) => {
+const sendTokenResponse = async (user, statusCode, res) => {
   const { accessToken, refreshToken } = generateTokens(user._id, user.role);
+
+  // Store refresh token in user document for rotation and revocation
+  user.refreshToken = refreshToken;
+  await user.save({ validateBeforeSave: false });
 
   const cookieOptions = {
     httpOnly: true,
@@ -46,8 +53,8 @@ const sendTokenResponse = (user, statusCode, res) => {
 
   res
     .status(statusCode)
-    .cookie('accessToken', accessToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 }) // 7 days
-    .cookie('refreshToken', refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 })
+    .cookie('accessToken', accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 }) // 15 mins
+    .cookie('refreshToken', refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 }) // 7 days
     .json({
       success: true,
       user: {
@@ -238,7 +245,7 @@ const login = async (req, res) => {
       if (!twoFactorToken) {
         const tempToken = jwt.sign(
           { id: user._id, role: user.role, is2FAPending: true },
-          process.env.JWT_SECRET,
+          JWT_2FA_SECRET,
           { expiresIn: '5m' }
         );
         return res.json({
@@ -274,6 +281,17 @@ const login = async (req, res) => {
 // @route   POST /api/auth/logout
 // @access  Private
 const logout = async (req, res) => {
+  try {
+    const token = req.cookies?.refreshToken;
+    if (token) {
+      const decoded = jwt.decode(token);
+      if (decoded && decoded.id && decoded.role) {
+        const Model = getUserModel(decoded.role);
+        await Model.findByIdAndUpdate(decoded.id, { $unset: { refreshToken: 1 } });
+      }
+    }
+  } catch (_) {}
+
   res
     .clearCookie('accessToken')
     .clearCookie('refreshToken')
@@ -304,22 +322,32 @@ const refreshToken = async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
     const Model = getUserModel(decoded.role);
     const user = await Model.findById(decoded.id);
-    if (!user) return res.status(401).json({ success: false, message: 'User not found' });
+    if (!user || user.refreshToken !== token) {
+      return res.status(401).json({ success: false, message: 'Invalid or revoked refresh token' });
+    }
 
-    const accessToken = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
-      expiresIn: '7d',
-    });
+    const { accessToken, refreshToken: newRefreshToken } = generateTokens(user._id, user.role);
+    user.refreshToken = newRefreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    };
 
     res
       .cookie('accessToken', accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        ...cookieOptions,
+        maxAge: 15 * 60 * 1000,
+      })
+      .cookie('refreshToken', newRefreshToken, {
+        ...cookieOptions,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .json({ success: true, accessToken });
   } catch (error) {
-    res.status(401).json({ success: false, message: 'Invalid refresh token' });
+    res.status(401).json({ success: false, message: 'Invalid or expired refresh token' });
   }
 };
 
@@ -352,32 +380,24 @@ const googleLogin = async (req, res) => {
       }
     }
 
-    // 2. If idToken provided, verify with tokeninfo endpoint
+    // 2. If idToken provided, verify with Google's tokeninfo endpoint
     if (!googleUser && idToken) {
       try {
         const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
         if (response.ok) {
           googleUser = await response.json();
+          // Verify aud against GOOGLE_CLIENT_ID if configured
+          if (process.env.GOOGLE_CLIENT_ID && googleUser.aud !== process.env.GOOGLE_CLIENT_ID) {
+            return res.status(401).json({ success: false, message: 'Unauthorized Google client ID' });
+          }
         }
       } catch (fetchErr) {
         console.warn('Google token verification fetch warning:', fetchErr.message);
       }
-
-      // Fallback: decode JWT payload safely
-      if (!googleUser || !googleUser.email) {
-        try {
-          const base64Url = idToken.split('.')[1];
-          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-          const jsonPayload = Buffer.from(base64, 'base64').toString('utf8');
-          googleUser = JSON.parse(jsonPayload);
-        } catch (decodeErr) {
-          // ignore
-        }
-      }
     }
 
     if (!googleUser || !googleUser.email) {
-      return res.status(400).json({ success: false, message: 'Invalid or expired Google authentication credentials' });
+      return res.status(401).json({ success: false, message: 'Invalid, forged, or expired Google authentication credentials' });
     }
 
     const { email, name, picture: avatar, sub: googleId } = googleUser;
@@ -495,7 +515,18 @@ const updateProfile = async (req, res) => {
     const { name, email, phone, address, notifications } = req.body;
 
     if (name) user.name = name;
-    if (email) user.email = email;
+    if (email && email.toLowerCase().trim() !== user.email) {
+      const cleanEmail = email.toLowerCase().trim();
+      const { Customer, BoutiqueOwner, Admin } = require('../models/User');
+      const existing = (await Customer.findOne({ email: cleanEmail, _id: { $ne: user._id } })) ||
+                       (await BoutiqueOwner.findOne({ email: cleanEmail, _id: { $ne: user._id } })) ||
+                       (await Admin.findOne({ email: cleanEmail, _id: { $ne: user._id } }));
+      if (existing) {
+        return res.status(400).json({ success: false, message: 'Email is already in use by another account' });
+      }
+      user.email = cleanEmail;
+      user.isVerified = false;
+    }
     if (phone) user.phone = phone;
     if (address) user.address = address;
     if (notifications) {
@@ -582,135 +613,266 @@ const updatePassword = async (req, res) => {
   }
 };
 
-// @desc    Forgot password
+// @desc    Forgot password (Universal: Customer, Boutique, Admin)
 // @route   POST /api/auth/forgotpassword
 // @access  Public
 const forgotPassword = async (req, res) => {
   try {
     const { email, role = 'customer' } = req.body;
 
-    const Model = getUserModel(role);
-    const user = await Model.findOne({ email });
-
-    if (!user) {
-      return res.status(200).json({ success: true, message: 'If an account exists with that email, a verification OTP has been sent' });
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ success: false, message: 'Please enter a valid email address.' });
     }
 
-    // Get reset OTP
-    const otp = user.getResetPasswordToken();
+    const normalizedEmail = email.toLowerCase().trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(normalizedEmail)) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid email format.' });
+    }
 
+    const normalizedRole = (role || 'customer').toLowerCase().trim();
+    const Model = getUserModel(normalizedRole);
+    let user = await Model.findOne({ email: normalizedEmail });
+    if (!user && (normalizedRole === 'customer' || normalizedRole === 'user')) {
+      user = await User.findOne({ email: normalizedEmail });
+    }
+
+    // Privacy-safe response: return generic success message if account doesn't exist
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        message: 'If an account exists for this email, a 6-digit verification code has been sent.',
+      });
+    }
+
+    // Rate-limiting resends: enforce 60-second cooldown
+    if (user.resetPasswordLastSent) {
+      const timeSinceLast = Date.now() - new Date(user.resetPasswordLastSent).getTime();
+      if (timeSinceLast < 60000) {
+        const waitSeconds = Math.ceil((60000 - timeSinceLast) / 1000);
+        return res.status(429).json({
+          success: false,
+          message: `Please wait ${waitSeconds} seconds before requesting a new code.`,
+        });
+      }
+    }
+
+    // Generate cryptographically secure OTP and 5-min expiration
+    const otp = user.getResetPasswordToken();
+    user.resetAuthToken = undefined;
+    user.resetAuthExpire = undefined;
     await user.save({ validateBeforeSave: false });
 
-    const html = `
-      <div style="font-family: 'Arial', sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
-        <div style="background-color: #001f3f; padding: 20px; text-align: center;">
-          <h1 style="color: #c5a059; margin: 0; font-size: 28px; letter-spacing: 2px;">AUTO STITCH.</h1>
-        </div>
-        <div style="padding: 30px; background-color: #ffffff; text-align: center;">
-          <h2 style="color: #333; margin-top: 0;">Password Reset OTP</h2>
-          <p style="color: #555; line-height: 1.6; font-size: 16px;">
-            You requested to reset your password. Use the 6-digit code below to proceed:
-          </p>
-          <div style="margin: 30px 0; background-color: #f4f4f4; padding: 20px; border-radius: 10px; display: inline-block;">
-            <h1 style="color: #c5a059; font-size: 40px; letter-spacing: 10px; margin: 0;">${otp}</h1>
-          </div>
-          <p style="color: #999; font-size: 14px;">
-            This code will expire in 10 minutes. If you did not request this, please ignore this email.
-          </p>
-        </div>
-        <div style="background-color: #f9f9f9; padding: 15px; text-align: center; border-top: 1px solid #eeeeee;">
-          <p style="color: #999; font-size: 12px; margin: 0;">
-            © ${new Date().getFullYear()} Auto Stitch Designs. All rights reserved.
-          </p>
-        </div>
-      </div>
-    `;
+    // Format human-friendly role name for email
+    let roleLabel = 'Customer';
+    if (user.role === 'boutique_owner' || normalizedRole === 'boutique' || normalizedRole === 'boutique_owner') {
+      roleLabel = 'Boutique Atelier';
+    } else if (user.role === 'admin' || normalizedRole === 'admin') {
+      roleLabel = 'Administrator';
+    }
+
+    const html = getPasswordResetOtpTemplate(user.name || roleLabel, otp, roleLabel);
 
     try {
       await sendEmail({
         email: user.email,
-        subject: 'Password Reset OTP - Auto Stitch',
+        subject: `Your AutoStitch Password Reset Code: ${otp}`,
         html,
       });
 
-      res.status(200).json({ success: true, message: 'OTP sent to your email' });
+      console.log(`[ForgotPassword] Verification code dispatched to ${user.email} (${roleLabel})`);
+
+      res.status(200).json({
+        success: true,
+        message: 'A 6-digit verification code has been sent to your email.',
+      });
     } catch (err) {
-      console.error('Email send error:', err);
+      console.error('[ForgotPassword] Email send error:', err);
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;
       await user.save({ validateBeforeSave: false });
-      return res.status(500).json({ success: false, message: 'Email could not be sent' });
+      return res.status(500).json({ success: false, message: 'Failed to dispatch email. Please try again later.' });
     }
   } catch (error) {
-    console.error('Forgot password error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('[ForgotPassword] Unexpected error:', error);
+    res.status(500).json({ success: false, message: 'Server error processing request' });
   }
 };
 
-// @desc    Verify OTP
+// @desc    Verify OTP and issue single-use Reset Authorization Token
 // @route   POST /api/auth/verifyotp
 // @access  Public
 const verifyOTP = async (req, res) => {
   try {
     const { email, role = 'customer', otp } = req.body;
 
-    const resetPasswordToken = crypto
-      .createHash('sha256')
-      .update(otp)
-      .digest('hex');
-
-    const Model = getUserModel(role);
-    const user = await Model.findOne({
-      email,
-      resetPasswordToken,
-      resetPasswordExpire: { $gt: Date.now() },
-    });
-
-    if (!user) {
-      return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: 'Email and 6-digit verification code are required.' });
     }
 
-    res.status(200).json({ success: true, message: 'OTP verified' });
+    const cleanOtp = otp.toString().trim();
+    if (!/^\d{6}$/.test(cleanOtp)) {
+      return res.status(400).json({ success: false, message: 'Verification code must be exactly 6 numeric digits.' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedRole = (role || 'customer').toLowerCase().trim();
+    const Model = getUserModel(normalizedRole);
+    let user = await Model.findOne({ email: normalizedEmail });
+    if (!user && (normalizedRole === 'customer' || normalizedRole === 'user')) {
+      user = await User.findOne({ email: normalizedEmail });
+    }
+
+    if (!user || !user.resetPasswordToken || !user.resetPasswordExpire) {
+      return res.status(400).json({
+        success: false,
+        message: 'No active password reset request found for this account. Please request a new code.',
+      });
+    }
+
+    // Check expiration (5 minutes)
+    if (new Date(user.resetPasswordExpire).getTime() < Date.now()) {
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      user.resetOtpAttempts = 0;
+      await user.save({ validateBeforeSave: false });
+      return res.status(400).json({
+        success: false,
+        message: 'The verification code has expired. Please request a new code.',
+      });
+    }
+
+    // Check attempt limits (max 5)
+    if ((user.resetOtpAttempts || 0) >= 5) {
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      user.resetOtpAttempts = 0;
+      await user.save({ validateBeforeSave: false });
+      return res.status(429).json({
+        success: false,
+        message: 'Too many incorrect attempts. For security reasons, please request a new verification code.',
+      });
+    }
+
+    // Hash user-provided OTP and compare
+    const enteredHash = crypto.createHash('sha256').update(cleanOtp).digest('hex');
+
+    if (user.resetPasswordToken !== enteredHash) {
+      user.resetOtpAttempts = (user.resetOtpAttempts || 0) + 1;
+      await user.save({ validateBeforeSave: false });
+      const remaining = Math.max(0, 5 - user.resetOtpAttempts);
+      return res.status(400).json({
+        success: false,
+        message: `Incorrect verification code. ${remaining} attempt(s) remaining.`,
+      });
+    }
+
+    // Successful OTP match! Invalidate OTP so it cannot be reused
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    user.resetOtpAttempts = 0;
+
+    // Issue a short-lived (15 minutes), single-use random reset authorization token
+    const rawResetToken = crypto.randomBytes(32).toString('hex');
+    user.resetAuthToken = crypto.createHash('sha256').update(rawResetToken).digest('hex');
+    user.resetAuthExpire = new Date(Date.now() + 15 * 60 * 1000);
+    await user.save({ validateBeforeSave: false });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Code verified successfully.',
+      resetToken: rawResetToken,
+    });
   } catch (error) {
-    console.error('Verify OTP error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('[VerifyOTP] Unexpected error:', error);
+    res.status(500).json({ success: false, message: 'Server error verifying code' });
   }
 };
 
-// @desc    Reset password (using OTP)
+// @desc    Reset password (using single-use Reset Token or OTP)
 // @route   PUT /api/auth/resetpassword
 // @access  Public
 const resetPassword = async (req, res) => {
   try {
-    const { email, role = 'customer', otp, password } = req.body;
+    const { email, role = 'customer', resetToken, otp, password } = req.body;
 
-    // Get hashed token from OTP
-    const resetPasswordToken = crypto
-      .createHash('sha256')
-      .update(otp)
-      .digest('hex');
-
-    const Model = getUserModel(role);
-    const user = await Model.findOne({
-      email,
-      resetPasswordToken,
-      resetPasswordExpire: { $gt: Date.now() },
-    });
-
-    if (!user) {
-      return res.status(400).json({ success: false, message: 'Invalid or expired OTP session' });
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email is required.' });
     }
 
-    // Set new password
+    if (!password || typeof password !== 'string' || password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters in length.' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedRole = (role || 'customer').toLowerCase().trim();
+    const Model = getUserModel(normalizedRole);
+    let user = await Model.findOne({ email: normalizedEmail }).select('+password');
+    if (!user && (normalizedRole === 'customer' || normalizedRole === 'user')) {
+      user = await User.findOne({ email: normalizedEmail }).select('+password');
+    }
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Account not found.' });
+    }
+
+    let isAuthorized = false;
+
+    // 1. Primary secure path: using the single-use resetToken issued by verifyOTP
+    if (resetToken && user.resetAuthToken && user.resetAuthExpire) {
+      if (new Date(user.resetAuthExpire).getTime() > Date.now()) {
+        const hashedToken = crypto.createHash('sha256').update(resetToken.trim()).digest('hex');
+        if (user.resetAuthToken === hashedToken) {
+          isAuthorized = true;
+        }
+      }
+    }
+
+    // 2. Secondary fallback path: using active OTP directly (backward compatibility)
+    if (!isAuthorized && otp && user.resetPasswordToken && user.resetPasswordExpire) {
+      if (new Date(user.resetPasswordExpire).getTime() > Date.now()) {
+        const hashedOtp = crypto.createHash('sha256').update(otp.toString().trim()).digest('hex');
+        if (user.resetPasswordToken === hashedOtp) {
+          isAuthorized = true;
+        }
+      }
+    }
+
+    if (!isAuthorized) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired password reset authorization. Please request a new verification code.',
+      });
+    }
+
+    // Set new password (pre-save hook will hash it with bcrypt cost 10)
     user.password = password;
+
+    // Invalidate all reset tokens and OTP state
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
+    user.resetPasswordLastSent = undefined;
+    user.resetOtpAttempts = 0;
+    user.resetAuthToken = undefined;
+    user.resetAuthExpire = undefined;
+
+    // Invalidate old refresh token and unlock account if previously locked
+    user.refreshToken = undefined;
+    user.loginAttempts = 0;
+    user.lockUntil = undefined;
+
     await user.save();
 
-    sendTokenResponse(user, 200, res);
+    console.log(`[ResetPassword] Password successfully updated for account: ${user.email} (Role: ${user.role})`);
+
+    // Return clean success message; do NOT automatically log in
+    res.status(200).json({
+      success: true,
+      message: 'Your password has been successfully reset. Please log in with your new credentials.',
+    });
   } catch (error) {
-    console.error('Reset password error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('[ResetPassword] Unexpected error:', error);
+    res.status(500).json({ success: false, message: 'Server error resetting password' });
   }
 };
 
@@ -838,7 +1000,7 @@ const validateLogin2FA = async (req, res) => {
 
     let decoded;
     try {
-      decoded = jwt.verify(tempToken, process.env.JWT_SECRET);
+      decoded = jwt.verify(tempToken, JWT_2FA_SECRET);
     } catch (e) {
       return res.status(401).json({ success: false, message: '2FA session expired. Please log in again.' });
     }

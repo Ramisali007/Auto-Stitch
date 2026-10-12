@@ -5,9 +5,24 @@ let io;
 const activeUsers = new Map(); // userId -> Set of socketIds
 
 const initSocket = (server) => {
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'https://autostitch-eight.vercel.app',
+    process.env.CLIENT_URL,
+  ].filter(Boolean);
+
   io = socketIo(server, {
     cors: {
-      origin: ['http://localhost:5173', 'http://127.0.0.1:5173', process.env.CLIENT_URL],
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || origin.includes('onrender.com') || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+          callback(null, true);
+        } else if (process.env.NODE_ENV !== 'production') {
+          callback(null, true);
+        } else {
+          callback(new Error('Blocked by CORS policy: Origin not allowed'));
+        }
+      },
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
       credentials: true
     }
@@ -27,7 +42,10 @@ const initSocket = (server) => {
     if (token) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        socket.user = decoded;
+        // Do not authenticate tokens with pending 2FA
+        if (!decoded.is2FAPending) {
+          socket.user = decoded;
+        }
       } catch (_) {
         // Handshake continues, but socket is unauthenticated
       }
@@ -38,14 +56,22 @@ const initSocket = (server) => {
   io.on('connection', (socket) => {
     let currentUserId = null;
 
-    // User joins their personal room for notifications & presence (Protected against IDOR)
+    // User joins their personal room for notifications & presence (Protected against IDOR & Unauthenticated spoofing)
     socket.on('join_user', (userId) => {
       if (!userId) return;
-      const targetId = userId.toString();
 
-      // If user is authenticated, ensure they cannot join someone else's private channel
-      if (socket.user && socket.user.role !== 'admin' && socket.user.id !== targetId) {
-        console.warn(`[SOCKET SECURITY] Blocked attempt by ${socket.user.id} to join unauthorized user room ${targetId}`);
+      // Require authentication
+      if (!socket.user) {
+        console.warn(`[SOCKET SECURITY] Blocked unauthenticated attempt to join user room ${userId}`);
+        return;
+      }
+
+      const targetId = userId.toString();
+      const currentAuthId = (socket.user.id || socket.user._id)?.toString();
+
+      // Ensure user cannot join someone else's private channel
+      if (socket.user.role !== 'admin' && currentAuthId !== targetId) {
+        console.warn(`[SOCKET SECURITY] Blocked attempt by ${currentAuthId} to join unauthorized user room ${targetId}`);
         return;
       }
 
@@ -69,23 +95,42 @@ const initSocket = (server) => {
       }
     });
 
-    // User joins a chat room
+    // User joins a chat room (Authenticated & Authorized participants only)
     socket.on('join_chat', (chatId) => {
+      if (!socket.user || !chatId || typeof chatId !== 'string') return;
+      const currentAuthId = (socket.user.id || socket.user._id)?.toString();
+
+      if (chatId.startsWith('chat_')) {
+        const parts = chatId.split('_');
+        if (parts.length === 3) {
+          const [, id1, id2] = parts;
+          if (socket.user.role !== 'admin' && currentAuthId !== id1 && currentAuthId !== id2) {
+            console.warn(`[SOCKET SECURITY] Blocked unauthorized join_chat attempt by ${currentAuthId} for ${chatId}`);
+            return;
+          }
+        }
+      }
       socket.join(chatId);
     });
 
-    // Typing Indicators
+    // Typing Indicators (Authenticated only)
     socket.on('typing', ({ chatId, senderName, senderId }) => {
+      if (!socket.user || !chatId) return;
       socket.to(chatId).emit('user_typing', { chatId, senderName, senderId });
     });
 
     socket.on('stop_typing', ({ chatId, senderId }) => {
+      if (!socket.user || !chatId) return;
       socket.to(chatId).emit('user_stop_typing', { chatId, senderId });
     });
 
-    // Direct in-chat quotation
+    // Direct in-chat quotation (Boutique owner / Admin only)
     socket.on('send_quotation', (quoteData) => {
-      const { chatId } = quoteData;
+      if (!socket.user || (socket.user.role !== 'boutique_owner' && socket.user.role !== 'admin')) {
+        console.warn(`[SOCKET SECURITY] Blocked unauthorized send_quotation attempt`);
+        return;
+      }
+      const { chatId } = quoteData || {};
       if (chatId) {
         io.to(chatId).emit('receive_quotation', quoteData);
       }
@@ -114,4 +159,3 @@ const getIO = () => {
 };
 
 module.exports = { initSocket, getIO };
-

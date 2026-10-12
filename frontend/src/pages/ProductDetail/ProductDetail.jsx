@@ -515,6 +515,10 @@ export default function ProductDetail() {
                     navigate('/login');
                     return;
                   }
+                  if (product._id && product._id.toString().startsWith('e')) {
+                    toast.error('This exclusive piece is an editorial showcase and cannot be added to cart. Please explore our active catalog.');
+                    return;
+                  }
                   addToCart(product);
                 }}
               >

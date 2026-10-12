@@ -51,6 +51,9 @@ export default function AdminLogin({ onLogin }) {
       }
 
       localStorage.setItem('user', JSON.stringify(data.user));
+      if (data.accessToken) {
+        localStorage.setItem('token', data.accessToken);
+      }
       onLogin && onLogin(data.user);
       navigate('/admin');
     } catch (err) {
@@ -116,6 +119,7 @@ export default function AdminLogin({ onLogin }) {
                   {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              <Link to="/forgot-password?portal=admin" className="forgot-pass-link">Forgot Password?</Link>
             </div>
 
             {import.meta.env.VITE_RECAPTCHA_SITE_KEY && (

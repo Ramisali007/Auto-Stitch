@@ -5,6 +5,7 @@ const Boutique = require('../models/Boutique');
 const { z } = require('zod');
 const sendEmail = require('../utils/sendEmail');
 const { getOrderConfirmationTemplate } = require('../utils/emailTemplates');
+const { resolveSafeFilePath, isSafeRemoteUrl } = require('../utils/securityUtils');
 
 const customizationRequestSchema = z.object({
   productId: z.string().min(1, 'Product ID is required'),
@@ -65,7 +66,7 @@ const getAvailableRequests = async (req, res) => {
     // Find requests that are open (submitted or bidding) 
     // AND not created by this boutique owner
     // AND that this boutique hasn't bid on yet
-    const requests = await CustomizationRequest.find({ 
+    const requests = await CustomizationRequest.find({
       status: { $in: ['submitted', 'bidding'] },
       customer: { $ne: req.user._id },
       bids: { $nin: await Bid.find({ boutique: boutique._id }).distinct('customizationRequest') }
@@ -197,21 +198,43 @@ const acceptBid = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
+    if (request.status === 'bid_accepted' || request.status === 'completed' || request.status === 'cancelled') {
+      return res.status(400).json({ success: false, message: `This customization request is already ${request.status}` });
+    }
+
     const bid = await Bid.findById(bidId);
     if (!bid) return res.status(404).json({ success: false, message: 'Bid not found' });
 
+    if (bid.customizationRequest.toString() !== requestId.toString()) {
+      return res.status(400).json({ success: false, message: 'Bid does not belong to this customization request' });
+    }
+
+    if (bid.status !== 'pending') {
+      return res.status(400).json({ success: false, message: `This bid is already ${bid.status}` });
+    }
+
+    // Pre-check Stripe availability BEFORE creating any order
+    if (paymentMethod === 'card' && !process.env.STRIPE_SECRET_KEY) {
+      return res.status(400).json({
+        success: false,
+        message: 'Stripe payment is not configured on this server. Please choose Cash on Delivery (COD).'
+      });
+    }
+
     // Fetch the original product being customized to get its image
     const Product = require('../models/Product');
+    const mongoose = require('mongoose');
     let productImage = '';
-    if (require('mongoose').Types.ObjectId.isValid(request.product)) {
-      const productDoc = await Product.findById(request.product);
+    let productId = null;
+    if (request.product && mongoose.Types.ObjectId.isValid(request.product)) {
+      productId = request.product._id || request.product;
+      const productDoc = await Product.findById(productId);
       if (productDoc && productDoc.images && productDoc.images.length > 0) {
         productImage = productDoc.images[0];
       }
     }
 
     // Create a New Order automatically
-    const Order = require('../models/Order');
     const acceptedBoutique = await Boutique.findById(bid.boutique);
 
     // Create the Order document
@@ -222,11 +245,12 @@ const acceptBid = async (req, res) => {
         customer: req.user._id,
         boutique: bid.boutique,
         items: [{
-          product: require('mongoose').Types.ObjectId.isValid(request.product) ? (request.product._id || request.product) : '69f5155aca01a992cebe9f58', 
+          ...(productId ? { product: productId } : {}),
           name: `Custom Tailored Garment: ${request.description ? request.description.substring(0, 35) : 'Bespoke Piece'}`,
           image: referencePhoto,
           price: bid.price,
-          quantity: 1
+          quantity: 1,
+          boutique: bid.boutique
         }],
         shippingAddress: {
           street: req.user.address?.street || 'Studio Delivery / Address on File',
@@ -245,34 +269,37 @@ const acceptBid = async (req, res) => {
 
       let stripeSessionUrl = null;
       if (paymentMethod === 'card') {
-        if (!process.env.STRIPE_SECRET_KEY) {
-          return res.status(400).json({ success: false, message: 'Stripe payment is not configured on this server. Please choose Cash on Delivery (COD).' });
-        }
-        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-        const session = await stripe.checkout.sessions.create({
-          payment_method_types: ['card'],
-          line_items: [
-            {
-              price_data: {
-                currency: 'usd',
-                product_data: {
-                  name: `Bespoke Proposal - Custom Design: ${request.description.substring(0, 30)}...`,
+        try {
+          const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+          const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: [
+              {
+                price_data: {
+                  currency: 'usd',
+                  product_data: {
+                    name: `Bespoke Proposal - Custom Design: ${request.description.substring(0, 30)}...`,
+                  },
+                  unit_amount: Math.round((bid.price / (parseFloat(process.env.EXCHANGE_RATE_PKR_USD) || 280)) * 100),
                 },
-                unit_amount: Math.round((bid.price / 280) * 100),
+                quantity: 1,
               },
-              quantity: 1,
-            },
-          ],
-          mode: 'payment',
-          success_url: `${process.env.CLIENT_URL}/bids?success=true&orderId=${order._id}&session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${process.env.CLIENT_URL}/bids?canceled=true`,
-          client_reference_id: order._id.toString(),
-          customer_email: req.user.email,
-        });
+            ],
+            mode: 'payment',
+            success_url: `${process.env.CLIENT_URL}/bids?success=true&orderId=${order._id}&session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${process.env.CLIENT_URL}/bids?canceled=true`,
+            client_reference_id: order._id.toString(),
+            customer_email: req.user.email,
+          });
 
-        order.stripePaymentIntentId = session.id;
-        await order.save();
-        stripeSessionUrl = session.url;
+          order.stripePaymentIntentId = session.id;
+          await order.save();
+          stripeSessionUrl = session.url;
+        } catch (stripeErr) {
+          console.error('[AcceptBid] Stripe session creation failed:', stripeErr);
+          await Order.findByIdAndDelete(order._id);
+          return res.status(500).json({ success: false, message: 'Failed to initialize payment gateway session' });
+        }
       }
 
       // Mark this bid as accepted
@@ -291,7 +318,7 @@ const acceptBid = async (req, res) => {
       await request.save();
 
       console.log(`[AcceptBid] Order created successfully: ${order._id}`);
-      
+
       // Notify the Boutique Owner
       const Notification = require('../models/Notification');
       if (acceptedBoutique) {
@@ -307,10 +334,10 @@ const acceptBid = async (req, res) => {
         });
       }
 
-      res.status(200).json({ 
-        success: true, 
+      res.status(200).json({
+        success: true,
         message: 'Bid accepted and Order created!',
-        data: { request, bid, order, stripeSessionUrl } 
+        data: { request, bid, order, stripeSessionUrl }
       });
 
       // Send Confirmation Email Asynchronously
@@ -383,7 +410,7 @@ const deleteCustomizationRequest = async (req, res) => {
 
     // Delete associated bids first
     await Bid.deleteMany({ customizationRequest: requestId });
-    
+
     // Delete the request
     await CustomizationRequest.findByIdAndDelete(requestId);
 
@@ -436,36 +463,29 @@ const generateCustomizationPreview = async (req, res) => {
       if (prod && prod.images && prod.images.length > 0) {
         const rawImg = prod.images[0];
         try {
-          if (rawImg.startsWith('http://') || rawImg.startsWith('https://')) {
+          if ((rawImg.startsWith('http://') || rawImg.startsWith('https://')) && isSafeRemoteUrl(rawImg)) {
             const resp = await fetch(rawImg);
-            baseBuffer = Buffer.from(await resp.arrayBuffer());
+            if (resp.ok) baseBuffer = Buffer.from(await resp.arrayBuffer());
           } else if (rawImg.startsWith('/Photos/') || rawImg.startsWith('Photos/')) {
-            const clean = rawImg.replace(/^\/?Photos\//, '');
-            const candidates = [
-              path.join(__dirname, '../../frontend/public/Photos', clean),
-              path.join(__dirname, '../../frontend/Photos', clean),
-              path.join(process.cwd(), 'frontend/public/Photos', clean),
-              path.join(process.cwd(), 'Photos', clean),
-            ];
-            for (const c of candidates) {
-              if (fs.existsSync(c)) { baseBuffer = fs.readFileSync(c); break; }
-            }
+            const clean = path.basename(rawImg.replace(/^\/?Photos\//, ''));
+            const candidate = path.join(__dirname, '../../frontend/public/Photos', clean);
+            if (fs.existsSync(candidate)) baseBuffer = fs.readFileSync(candidate);
           }
-        } catch (_) {}
+        } catch (_) { }
       }
     }
 
     if (!baseBuffer && referenceImages && referenceImages.length > 0) {
       try {
         const ref = referenceImages[0];
-        if (ref.startsWith('http://') || ref.startsWith('https://')) {
+        if ((ref.startsWith('http://') || ref.startsWith('https://')) && isSafeRemoteUrl(ref)) {
           const resp = await fetch(ref);
-          baseBuffer = Buffer.from(await resp.arrayBuffer());
+          if (resp.ok) baseBuffer = Buffer.from(await resp.arrayBuffer());
         } else if (ref.startsWith('/uploads/')) {
-          const p = path.join(__dirname, '..', ref);
-          if (fs.existsSync(p)) baseBuffer = fs.readFileSync(p);
+          const safePath = resolveSafeFilePath(path.join(__dirname, '../uploads'), ref.replace(/^\/?uploads\//, ''));
+          if (safePath && fs.existsSync(safePath)) baseBuffer = fs.readFileSync(safePath);
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     if (!baseBuffer) {

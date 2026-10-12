@@ -6,10 +6,23 @@ try {
 } catch (_) {}
 
 const connectDB = async (retries = 5) => {
+  let targetUri = process.env.MONGO_URI;
+
+  // Completely isolate test suite from production/development database
+  if (process.env.NODE_ENV === 'test') {
+    if (process.env.MONGO_TEST_URI) {
+      targetUri = process.env.MONGO_TEST_URI;
+    } else if (targetUri && targetUri.includes('/autostitch?')) {
+      targetUri = targetUri.replace('/autostitch?', '/autostitch_test?');
+    } else if (targetUri && targetUri.includes('/autostitch')) {
+      targetUri = targetUri.replace('/autostitch', '/autostitch_test');
+    }
+  }
+
   for (let i = 1; i <= retries; i++) {
     try {
-      const conn = await mongoose.connect(process.env.MONGO_URI);
-      console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+      const conn = await mongoose.connect(targetUri);
+      console.log(`✅ MongoDB Connected (${process.env.NODE_ENV || 'development'}): ${conn.connection.host}/${conn.connection.name}`);
       return;
     } catch (error) {
       console.error(`❌ MongoDB Connection Attempt ${i}/${retries} Failed: ${error.message}`);

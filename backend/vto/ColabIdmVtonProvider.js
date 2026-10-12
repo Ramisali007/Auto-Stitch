@@ -42,6 +42,16 @@ class ColabIdmVtonProvider extends VirtualTryOnProvider {
 
     const { personBuffer, garmentBuffer, category = 'tops', garmentName = 'Garment', fitStyle = 'Tailored' } = input;
 
+    // Fast preflight probe: if host/tunnel is down, fail fast (<3s) to allow cascade to Replicate/secondary
+    try {
+      await fetch(`${serviceUrl}/health`, { signal: AbortSignal.timeout(3000) });
+    } catch (probeErr) {
+      console.warn(`[ColabIdmVtonProvider] Preflight reachability probe failed for ${serviceUrl}: ${probeErr.message}`);
+      const err = new Error(`Colab GPU service at ${serviceUrl} is unreachable (${probeErr.message}).`);
+      err.code = 'PROVIDER_UNREACHABLE';
+      throw err;
+    }
+
     let idmCategory = 'upper_body';
     if (category === 'bottoms' || category === 'lower_body') idmCategory = 'lower_body';
     else if (category === 'one-pieces' || category === 'dresses') idmCategory = 'dresses';
@@ -53,7 +63,8 @@ class ColabIdmVtonProvider extends VirtualTryOnProvider {
     console.log(`[ColabIdmVtonProvider] Sending inference request to Colab at ${serviceUrl}...`);
 
     const endpoints = ['/tryon_direct', '/api/tryon', '/tryon'];
-    const timeoutMs = parseInt(process.env.VTO_TIMEOUT_SECONDS || '300', 10) * 1000;
+    const configuredTimeout = parseInt(process.env.VTO_TIMEOUT_SECONDS || '45', 10) * 1000;
+    const timeoutMs = Math.min(configuredTimeout, 60000); // Max 60s per endpoint attempt
 
     for (const endpoint of endpoints) {
       try {

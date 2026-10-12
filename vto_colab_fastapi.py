@@ -60,6 +60,7 @@ class TryOnRequest(BaseModel):
     human_image: str
     garment_image: str
     category: str = "dresses"
+    garment_name: str = "Garment"
     fit_style: str = "Tailored"
 
 @app.get("/health")

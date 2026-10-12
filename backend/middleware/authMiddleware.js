@@ -15,6 +15,9 @@ const protect = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.is2FAPending) {
+      return res.status(401).json({ success: false, message: 'Two-Factor Authentication required' });
+    }
     const { getUserModel } = require('../models/User');
     const Model = getUserModel(decoded.role);
     req.user = await Model.findById(decoded.id).select('-password -refreshToken -twoFactorSecret');
@@ -56,6 +59,9 @@ const optionalAuth = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.is2FAPending) {
+      return next();
+    }
     const { getUserModel } = require('../models/User');
     const Model = getUserModel(decoded.role);
     req.user = await Model.findById(decoded.id).select('-password -refreshToken -twoFactorSecret');

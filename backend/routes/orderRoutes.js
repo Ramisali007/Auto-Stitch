@@ -27,9 +27,10 @@ router.post('/track', trackOrderLimiter, trackOrder);
 
 // Customer routes
 router.get('/', protect, authorize('customer'), getMyOrders);
+router.get('/my-orders', protect, authorize('customer'), getMyOrders);
 router.post('/', protect, authorize('customer'), createOrder);
 router.post('/:id/verify-payment', protect, verifyOrderPayment);
-router.post('/:id/installments/:installmentIndex/pay', protect, authorize('customer'), payInstallment);
+router.post('/:id/installments/:installmentIndex/pay', protect, authorize('customer', 'admin'), payInstallment);
 router.post('/:id/installments/:installmentIndex/stripe-session', protect, authorize('customer'), createInstallmentStripeSession);
 router.post('/:id/request-return', protect, authorize('customer'), requestOrderReturn);
 router.patch('/:id/review-return', protect, authorize('boutique_owner'), reviewOrderReturn);

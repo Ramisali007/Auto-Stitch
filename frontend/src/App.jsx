@@ -167,7 +167,9 @@ export default function App() {
                 <Route path="/login" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace /> : <Login onLogin={handleLogin} />} />
                 <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <Register onLogin={handleLogin} />} />
                 <Route path="/admin-login" element={user && user.role === 'admin' ? <Navigate to="/admin" replace /> : <AdminLogin onLogin={handleLogin} />} />
+                <Route path="/admin/login" element={<Navigate to="/admin-login" replace />} />
                 <Route path="/boutique-login" element={user && user.role === 'boutique_owner' ? <Navigate to="/boutique/dashboard" replace /> : <BoutiqueLogin onLogin={handleLogin} />} />
+                <Route path="/boutique/login" element={<Navigate to="/boutique-login" replace />} />
                 <Route path="/forgot-password" element={user ? <Navigate to="/dashboard" replace /> : <ForgotPassword />} />
 
                 {/* Customer & Marketplace Customization Routes */}

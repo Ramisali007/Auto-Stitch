@@ -19,15 +19,16 @@ const {
   validateLogin2FA
 } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
+const { otpLimiter } = require('../middleware/rateLimiter');
 
 router.post('/register', register);
 router.post('/login', login);
 router.post('/google', googleLogin);
 router.post('/facebook', facebookLogin);
 router.post('/logout', logout);
-router.post('/forgotpassword', forgotPassword);
-router.post('/verifyotp', verifyOTP);
-router.put('/resetpassword', resetPassword);
+router.post('/forgotpassword', otpLimiter, forgotPassword);
+router.post('/verifyotp', otpLimiter, verifyOTP);
+router.put('/resetpassword', otpLimiter, resetPassword);
 
 // 2FA Routes
 router.post('/2fa/setup', protect, setup2FA);

@@ -53,5 +53,38 @@ output/
 extracted_srs.txt
 backend/uploads/vto_temp/
 uploads/vto_temp/
+archive/
 
+# Python & ML Environments / Caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.onnx
+*.ckpt
 
+# Security & Private Credentials
+*.pem
+*.key
+*.pfx
+*.p12
+*.crt
+credentials.json
+*serviceAccountKey*.json
+*service-account*.json
+id_rsa
+*.id_rsa
+
+# Local Databases
+*.sqlite
+*.sqlite3
+*.db

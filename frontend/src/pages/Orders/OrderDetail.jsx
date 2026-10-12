@@ -71,7 +71,7 @@ export default function OrderDetail() {
 
   const handleVerifyInstallmentPayment = async (instIndex, sessionId) => {
     try {
-      await axios.post(`${API_URL}/api/orders/${id}/installments/${instIndex}/pay`, {}, { withCredentials: true });
+      await axios.post(`${API_URL}/api/orders/${id}/installments/${instIndex}/pay`, { sessionId }, { withCredentials: true });
       toast.success(`Installment #${parseInt(instIndex, 10) + 1} marked as paid!`);
       fetchOrder();
     } catch (err) {

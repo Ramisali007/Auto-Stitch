@@ -125,6 +125,7 @@ export default function BoutiqueLogin({ onLogin }) {
                   {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              <Link to="/forgot-password?portal=boutique" className="forgot-pass-link">Forgot Password?</Link>
             </div>
 
             {import.meta.env.VITE_RECAPTCHA_SITE_KEY && (

@@ -1,3 +1,8 @@
 node_modules/
 .env
 *.log
+uploads/*
+!uploads/.gitkeep
+!uploads/vto_temp/
+uploads/vto_temp/*
+!uploads/vto_temp/.gitkeep

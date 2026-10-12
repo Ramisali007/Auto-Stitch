@@ -181,9 +181,12 @@ const updateProduct = async (req, res) => {
     const mergedData = { ...product.toObject(), ...parsed.data };
     const embedding = generateProductEmbedding(mergedData);
 
+    // If edited by a boutique owner, re-queue product for admin moderation to prevent bypassing review
+    const statusUpdate = req.user.role === 'admin' ? (parsed.data.status || product.status) : 'pending';
+
     const updated = await Product.findByIdAndUpdate(
       req.params.id,
-      { ...parsed.data, embedding },
+      { ...parsed.data, status: statusUpdate, embedding },
       { new: true, runValidators: true }
     );
     res.json({ success: true, product: updated });
@@ -223,6 +226,21 @@ const addReview = async (req, res) => {
 
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
+
+    // Enforce verified purchase: only customers who have placed an order for this item can review
+    const Order = require('../models/Order');
+    const hasPurchased = await Order.exists({
+      customer: req.user._id,
+      'items.product': product._id,
+      status: { $in: ['placed', 'accepted', 'in_production', 'ready_to_ship', 'shipped', 'delivered', 'completed'] }
+    });
+
+    if (!hasPurchased) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only verified purchasers can submit a review for this product.'
+      });
+    }
 
     const reviewIndex = product.reviews.findIndex((r) => r.user.toString() === req.user._id.toString());
     const Review = require('../models/Review');

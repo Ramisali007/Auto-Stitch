@@ -100,11 +100,13 @@ app.use((req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({
+  console.error(err.stack || err);
+  const status = err.status || 500;
+  const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
+  res.status(status).json({
     success: false,
-    message: err.message || 'Internal Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    message: isDev ? (err.message || 'Internal Server Error') : (status === 500 ? 'Internal Server Error' : err.message),
+    ...(isDev && { stack: err.stack }),
   });
 });
 

@@ -41,16 +41,20 @@ const userSchema = new mongoose.Schema(
     },
     resetPasswordToken: String,
     resetPasswordExpire: Date,
+    resetPasswordLastSent: Date,
+    resetOtpAttempts: { type: Number, default: 0 },
+    resetAuthToken: String,
+    resetAuthExpire: Date,
   },
   { timestamps: true }
 );
 
 // ... (existing methods)
 
-// Generate 6-digit numeric OTP for password reset
+// Generate 6-digit cryptographically secure numeric OTP for password reset (5-minute expiry)
 userSchema.methods.getResetPasswordToken = function () {
-  // Generate a random 6-digit number
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  // Cryptographically secure random 6-digit number
+  const otp = crypto.randomInt(100000, 1000000).toString();
 
   // Hash token and set to resetPasswordToken field
   this.resetPasswordToken = crypto
@@ -58,8 +62,10 @@ userSchema.methods.getResetPasswordToken = function () {
     .update(otp)
     .digest('hex');
 
-  // Set expire (10 minutes)
-  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
+  // Set expire (5 minutes)
+  this.resetPasswordExpire = Date.now() + 5 * 60 * 1000;
+  this.resetPasswordLastSent = Date.now();
+  this.resetOtpAttempts = 0;
 
   return otp;
 };
@@ -88,11 +94,18 @@ const User = mongoose.model('User', userSchema, 'users');
 
 // Helper to get model by role
 const getUserModel = (role) => {
-  switch (role) {
-    case 'admin': return Admin;
-    case 'boutique_owner': return BoutiqueOwner;
-    case 'customer': return Customer;
-    default: return Customer;
+  const normalized = (role || '').toLowerCase().trim();
+  switch (normalized) {
+    case 'admin':
+      return Admin;
+    case 'boutique_owner':
+    case 'boutique':
+      return BoutiqueOwner;
+    case 'customer':
+    case 'user':
+      return Customer;
+    default:
+      return Customer;
   }
 };
 

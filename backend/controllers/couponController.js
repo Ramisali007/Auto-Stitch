@@ -128,7 +128,42 @@ const getActiveCoupons = async (req, res) => {
   }
 };
 
+// Helper function to calculate discount authoritative on backend
+const calculateDiscount = async (code, cartTotal) => {
+  if (!code || !code.trim()) return { discountAmount: 0, freeShipping: false };
+  const cleanCode = code.trim().toUpperCase();
+  let coupon = await Coupon.findOne({ code: cleanCode, isActive: true });
+  if (!coupon && DEMO_COUPONS[cleanCode]) {
+    coupon = DEMO_COUPONS[cleanCode];
+  }
+  if (!coupon) return { discountAmount: 0, freeShipping: false };
+  if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
+    return { discountAmount: 0, freeShipping: false };
+  }
+  if (coupon.minOrderAmount > 0 && cartTotal < coupon.minOrderAmount) {
+    return { discountAmount: 0, freeShipping: false };
+  }
+
+  let discountAmount = 0;
+  let freeShipping = false;
+
+  if (coupon.discountType === 'percentage') {
+    discountAmount = Math.round((cartTotal * coupon.discountValue) / 100);
+    if (coupon.maxDiscountAmount && discountAmount > coupon.maxDiscountAmount) {
+      discountAmount = coupon.maxDiscountAmount;
+    }
+  } else if (coupon.discountType === 'flat') {
+    discountAmount = Math.min(coupon.discountValue, cartTotal);
+  } else if (coupon.discountType === 'free_shipping') {
+    freeShipping = true;
+    discountAmount = 250;
+  }
+
+  return { discountAmount, freeShipping, coupon };
+};
+
 module.exports = {
   validateCoupon,
-  getActiveCoupons
+  getActiveCoupons,
+  calculateDiscount
 };

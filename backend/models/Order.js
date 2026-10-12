@@ -1,13 +1,14 @@
 const mongoose = require('mongoose');
 
 const orderItemSchema = new mongoose.Schema({
-  product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+  product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: false },
   name: { type: String, required: true },
   image: { type: String },
   price: { type: Number, required: true },
   quantity: { type: Number, required: true, min: 1 },
   size: { type: String },
   color: { type: String },
+  boutique: { type: mongoose.Schema.Types.ObjectId, ref: 'Boutique' },
 });
 
 const orderSchema = new mongoose.Schema(
@@ -68,9 +69,11 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+const crypto = require('crypto');
+
 orderSchema.pre('save', function () {
   if (!this.referenceId) {
-    this.referenceId = this._id.toString().slice(-6).toUpperCase();
+    this.referenceId = crypto.randomBytes(4).toString('hex').toUpperCase();
   }
 });
 
